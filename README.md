@@ -15,3 +15,6 @@
 wget https://raw.githubusercontent.com/<你的用户名>/One-Click-Proxy-Installer/main/install.sh
 chmod +x install.sh
 sudo ./install.sh
+
+维护者：Zhong Yuan
+邮箱：qq1257343366@gmail.com
