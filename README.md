@@ -14,7 +14,7 @@
 ## 快速开始
 
 ```bash
-wget https://raw.githubusercontent.com/你的用户名/One-Click-Proxy-Installer/main/one_click.sh
+wget https://raw.githubusercontent.com/shangguancaiyun/One-Click-Proxy-Installer/main/one_click.sh
 chmod +x one_click.sh
 ./one_click.sh
 ```
