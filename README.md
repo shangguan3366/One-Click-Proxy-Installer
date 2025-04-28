@@ -44,7 +44,7 @@ hysteria2一键安装(轻量级超低占用)
 宝宝们如果觉得好用，记得点个小星星⭐️哦
 
 
-☆支持安装xanmod内核使用bbrv3加速（脚本来自[ylx2016](https://github.com/ylx2016/Linux-NetSpeed)）
+☆支持安装xanmod内核使用bbrv3加速(https://github.com/ylx2016/Linux-NetSpeed)
 
 **在线订阅转换网站**(支持多种协议互转):[订阅转换](https://sub.crazyact.com/)
 
@@ -65,7 +65,6 @@ wget -O hy2.py https://raw.githubusercontent.com/seagullz4/hysteria2/main/hyster
 
 **新增快捷方式终端输入hy2一键执行脚本**
 
-**我的联系方式:[电报](https://t.me/seagullz44)**
 
 本项目原hysteria2地址请点击[hysteria](https://github.com/apernet/hysteria)
 
