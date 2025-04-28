@@ -55,7 +55,7 @@ wget -O install.sh https://raw.githubusercontent.com/seagullz4/hysteria2/main/in
 ```
 **🙃安装脚本2(python版)(推荐):**
 ```
-#执行安装依赖(请执一次依赖安装在进行安装脚本):
+#执行安装依赖(请执一次依赖安装再进行安装脚本):
 
 wget -O phy2.sh https://raw.githubusercontent.com/seagullz4/hysteria2/main/phy2.sh && chmod +x phy2.sh && bash phy2.sh
 
