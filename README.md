@@ -1,13 +1,13 @@
 # One-Click-Proxy-Installer/一键安装代理脚本
 
-一键多合一代理脚本，支持 V2Ray、Trojan、Shadowsocks 等多种协议，集成 BBR 网络优化，适用于 VPS 快速部署。
+一键多合一代理脚本，支持 Hysteria、Tuic、Trojan、Shadowsocks 等多种协议，集成 BBR 网络优化，适用于 VPS 快速部署。
 
 ## 功能特性
 
-- 一键安装 V2Ray、Trojan、Shadowsocks
+- 一键安装 Hysteria、Tuic、Trojan、Shadowsocks
 - 支持 BBR 网络加速
 - 自动化脚本，极简操作
-- 兼容 Ubuntu 和 Debian 系统。
+- 兼容 Ubuntu 和 Debian 等常用Linux系统。
 - 简单易用的交互式菜单。
 - 持续维护与更新
 
