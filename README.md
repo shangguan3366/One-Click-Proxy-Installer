@@ -66,8 +66,6 @@ wget -O hy2.py https://raw.githubusercontent.com/seagullz4/hysteria2/main/hyster
 **新增快捷方式终端输入hy2一键执行脚本**
 
 
-本项目原hysteria2地址请点击[hysteria](https://github.com/apernet/hysteria)
-
 安卓/ios/mac/linux/win等平台详见:[hysteia2三方应用](https://v2.hysteria.network/zh/docs/getting-started/3rd-party-apps/)
 
 ios端推荐:
