@@ -26,7 +26,7 @@
 
 ### 🚀 如何使用？
 
-1. **一键运行**  
+1. **一键部署BBR加速**  
    ```bash
    bash <(curl -l -s https://raw.githubusercontent.com/byJoey/Actions-bbr-v3/refs/heads/main/install.sh)
    ```
