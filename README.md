@@ -76,7 +76,7 @@ hiddfy,Shadowrocket等
 
 安卓端推荐：
 
-[karing](https://github.com/KaringX/karing/releases/tag/v1.1.2.606)
+[karing](https://github.com/KaringX/karing/releases/tag/v1.1.2.606)(点资产后缀为apk的最新版下载)
 
 [nekobox](https://github.com/MatsuriDayo/NekoBoxForAndroid/releases)
 
@@ -89,6 +89,8 @@ hiddfy,Shadowrocket等
 [v2rayNG](https://github.com/2dust/v2rayNG/releases)
 
 电脑端推荐:
+
+[karing](https://github.com/KaringX/karing/releases/download/v1.1.2.606/karing_1.1.2.606_windows_x64.exe)(免费开源点击即可下载)
 
 [v2ray](https://github.com/2dust/v2rayN/releases)(推荐)
 
