@@ -26,7 +26,7 @@
 
 ### 🚀 如何使用？
 >>>
-#若VPS是纯IPV6,如Hax; 我们可以先给它添加warp的IPV4:
+#若VPS是纯IPV6,如"德基euserv""哈鸡Hax"; 我们可以先给它添加warp的IPV4:
 
 >apt-get update && apt-get install -y curl #(更新系统养成习惯)
 
@@ -72,7 +72,17 @@ wget -O phy2.sh https://raw.githubusercontent.com/seagullz4/hysteria2/main/phy2.
 wget -O hy2.py https://raw.githubusercontent.com/seagullz4/hysteria2/main/hysteria2.py && chmod +x hy2.py && python3 hy2.py
 ```
 
-**新增快捷方式终端输入hy2一键执行脚本**
+**新增快捷方式终端输入hy2一键执行脚本安装！
+>
+❤ VPS工具箱推荐:^^目前我正在使用的工具箱>
+
+>
+
+# 1.(老王工具箱)老王一键工具箱
+>curl -fsSL https://raw.githubusercontent.com/eooce/ssh_tool/main/ssh_tool.sh -o ssh_tool.sh && chmod +x ssh_tool.sh && ./ssh_tool.sh
+
+# 2.(科技lion)#科技lion一键脚本
+>bash <(curl -sL kejilion.sh)
 
 
 安卓/ios/mac/linux/win等平台详见:[hysteia2三方应用](https://v2.hysteria.network/zh/docs/getting-started/3rd-party-apps/)
