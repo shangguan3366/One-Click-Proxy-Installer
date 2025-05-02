@@ -30,8 +30,8 @@
 
 apt-get update && apt-get install -y curl (更新系统)
 
->>>#套warp
-wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash menu.sh [option] [lisence/url/token]
+#套warp
+>>>wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash menu.sh [option] [lisence/url/token]#warp
 
 **一键部署BBR加速**  
    ```bash
