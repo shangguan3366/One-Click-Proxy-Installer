@@ -71,10 +71,12 @@ wget -O hy2.py https://raw.githubusercontent.com/seagullz4/hysteria2/main/hyster
 安卓/ios/mac/linux/win等平台详见:[hysteia2三方应用](https://v2.hysteria.network/zh/docs/getting-started/3rd-party-apps/)
 
 ios端推荐:
-
+免费开源❤Karing❤ 强烈推荐
 hiddfy,Shadowrocket等
 
 安卓端推荐：
+
+[karing](https://github.com/KaringX/karing/releases/tag/v1.1.2.606)
 
 [nekobox](https://github.com/MatsuriDayo/NekoBoxForAndroid/releases)
 
