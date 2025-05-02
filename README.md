@@ -26,7 +26,12 @@
 
 ### 🚀 如何使用？
 
-1. **一键部署BBR加速**  
+#若VPS是纯IPV6,如Hax; 我们可以先给它添加warp的IPV4:
+apt-get update && apt-get install -y curl (更新系统)
+#套warp
+wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash menu.sh [option] [lisence/url/token]
+
+**一键部署BBR加速**  
    ```bash
    bash <(curl -l -s https://raw.githubusercontent.com/byJoey/Actions-bbr-v3/refs/heads/main/install.sh)
    ```
