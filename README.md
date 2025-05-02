@@ -82,7 +82,7 @@ wget -O hy2.py https://raw.githubusercontent.com/seagullz4/hysteria2/main/hyster
 
 
 #
-## ❤ VPS工具箱推荐:^^目前我正在使用的工具箱>
+## ❤ ✨VPS工具箱推荐:^^目前我正在使用的工具箱>✨
 
 
 >
