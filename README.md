@@ -150,4 +150,3 @@ akile的dns解锁流媒体vps [akile](https://akile.io/register?aff_code=9953229
 MIT License
 
 维护者：Zhong Yuan
-邮箱：qq1257343366@gmail.com
