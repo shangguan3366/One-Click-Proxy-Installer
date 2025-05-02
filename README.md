@@ -28,10 +28,10 @@
 >>>
 #若VPS是纯IPV6,如Hax; 我们可以先给它添加warp的IPV4:
 
-apt-get update && apt-get install -y curl (更新系统)
+>apt-get update && apt-get install -y curl #(更新系统养成习惯)
 
 #套warp
->>>wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash menu.sh [option] [lisence/url/token]#warp
+>>wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash menu.sh [option] [lisence/url/token]#warp
 
 **一键部署BBR加速**  
    ```bash
