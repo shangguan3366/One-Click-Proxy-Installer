@@ -1,4 +1,4 @@
-，，，，，，# One-Click-Proxy-Installer/一键安装脚本
+，，，，，# One-Click-Proxy-Installer/一键安装脚本
 ### 🌟 简介  
 ★真正适合小白自己折腾的脚本！
 欢迎来到 **ZhongYuan** 的一键安装脚本！  
