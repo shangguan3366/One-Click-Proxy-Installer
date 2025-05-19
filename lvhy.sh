@@ -3,7 +3,7 @@
 # Script for Sing-Box Hysteria2 & Reality Management
 
 # --- 统计信息文件 ---
-STATS_FILE="$(dirname "$0")/.lvhy_stats"
+STATS_FILE="$HOME/.oneclick_stats"
 
 # --- 统计函数 ---
 update_run_stats() {
