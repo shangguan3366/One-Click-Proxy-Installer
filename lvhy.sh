@@ -106,10 +106,6 @@ check_dependencies() {
     success "依赖检查通过。"
 }
 
-# ----------- 其余所有功能函数（请将你现有的 get_server_ip、install_singbox_core、create_config_json、display_and_store_config_info、toolbox_menu、show_menu、change_quick_cmd、update_script_online、show_current_import_info、主循环等全部补全到这里，结构与前述模板一致，所有健壮性和体验优化全部保留） -----------
-
-# ...（此处省略，直接粘贴你现有的所有功能函数实现，确保所有函数都在主逻辑前面）...
-
 # ----------- show_current_import_info 优化 -----------
 show_current_import_info() {
     # 强制加载上次保存的配置信息
@@ -133,6 +129,11 @@ check_root() {
     fi
 }
 
+# ====== 所有函数定义 ======
+# 请将 show_menu、toolbox_menu、节点管理、导入信息、change_quick_cmd、update_script_online 等所有函数定义都放在这里
+# ...
+
+# ====== 主循环入口 ======
 check_root
 check_dependencies
 find_and_set_singbox_cmd
