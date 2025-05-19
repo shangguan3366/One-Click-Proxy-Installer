@@ -41,9 +41,9 @@
 *   核心依赖: `curl`, `openssl`, `jq` (脚本会尝试自动安装)
 *   可选依赖: `qrencode` (用于显示二维码，脚本会尝试自动安装)
 
-## 使用方法
+## ✨使用方法✨
 
-### 1. 下载并运行脚本
+### ✨1. 下载并运行脚本
 
 ```bash
 wget -O lvhy.sh https://github.com/shangguancaiyun/One-Click-Proxy-Installer/raw/main/lvhy.sh && chmod +x lvhy.sh && ./lvhy.sh
@@ -53,7 +53,7 @@ wget -O lvhy.sh https://github.com/shangguancaiyun/One-Click-Proxy-Installer/raw
 bash <(curl -sSL https://github.com/shangguancaiyun/One-Click-Proxy-Installer/raw/main/lvhy.sh)
 ```
 
-### 2. 再次运行脚本
+### ✨2. 再次运行脚本
 
 ```bash
 sudo bash lvhy.sh
@@ -96,13 +96,13 @@ sudo bash lvhy.sh
 
 根据提示输入数字选择相应功能即可。
 
-**初次使用建议：**
+**✨初次使用建议：**
 
 *   选择 `1`, `2`, 或 `3` 进行安装。脚本会引导你输入必要的参数（如端口、SNI 等），大部分参数有默认值可直接回车使用。
 *   安装成功后，脚本会显示客户端导入所需的全部信息，包括文本参数和二维码（如果 `qrencode` 已安装）。请妥善保存这些信息。
 *   之后你可以使用选项 `11` 再次查看这些信息。
 
-### 注意事项
+### ❤注意事项❤
 
 *   **配置文件**: Sing-Box 的主配置文件位于 `/usr/local/etc/sing-box/config.json`。Hysteria2 使用的自签名证书位于 `/etc/hysteria/`。
 *   **持久化信息**: 上次成功安装的导入参数会保存在 `/usr/local/etc/sing-box/.last_singbox_script_info` 文件中，以便下次运行时通过菜单查看。卸载时如果选择删除配置目录，此文件也会被删除。
@@ -264,120 +264,3 @@ MIT License
 
 
 >
-
-
-#
-## ✨一键 Hysteria2安装脚本✨  
-  
-
->   
- 
-
-### 🚀 如何使用？
-
-hysteria2一键安装(轻量级超低占用)
-宝宝们如果觉得好用，记得点个小星星⭐️哦
-
-
-
-**在线订阅转换网站**(支持多种协议互转):[订阅转换](https://sub.crazyact.com/)
-
-**🙃安装脚本(shell版)(持续维护中):**
-```
-wget -O install.sh https://raw.githubusercontent.com/seagullz4/hysteria2/main/install.sh && chmod +x install.sh && bash install.sh
-```
-**🙃安装脚本2(python版)(推荐):**
-```
-#执行安装依赖(请执一次依赖安装再进行安装脚本):
-
-wget -O phy2.sh https://raw.githubusercontent.com/seagullz4/hysteria2/main/phy2.sh && chmod +x phy2.sh && bash phy2.sh
-
-#执行安装脚本:
-
-wget -O hy2.py https://raw.githubusercontent.com/seagullz4/hysteria2/main/hysteria2.py && chmod +x hy2.py && python3 hy2.py
-```
-
-**新增快捷方式终端输入hy2一键执行脚本安装！
-
-
->
-
-
-#
-## ❤ ✨VPS工具箱推荐:^^目前我正在使用的工具箱>✨
-
-
->
-
-
-# 1.(老王一键工具箱)可用于代理节点的搭建. 快捷启动"k",建议在本工具中改为"w"
->curl -fsSL https://raw.githubusercontent.com/eooce/ssh_tool/main/ssh_tool.sh -o ssh_tool.sh && chmod +x ssh_tool.sh && ./ssh_tool.sh
-
-# 2.(科技lion)#科技lion一键脚本. 快捷启动为"k"，为避免冲突可改为"i"
->bash <(curl -sL kejilion.sh)
-
-
-
-
->
-
-
-
-
-#
-安卓/ios/mac/linux/win等平台详见:[支持hysteia2三方应用](https://v2.hysteria.network/zh/docs/getting-started/3rd-party-apps/)
-
-ios端推荐:
-免费开源❤Karing❤ 强烈推荐
-hiddfy,Shadowrocket等
-
-安卓端推荐：
-
-[karing](https://github.com/KaringX/karing/releases/tag/v1.1.2.606)(点资产后缀为apk的最新版下载)
-
-[nekobox](https://github.com/MatsuriDayo/NekoBoxForAndroid/releases)
-
-[husi](https://github.com/xchacha20-poly1305/husi/releases)(非常不错+nice)
-
-[Clash-Meta](https://github.com/MetaCubeX/ClashMetaForAndroid/releases)
-
-[hiddify](https://github.com/hiddify/hiddify-next/releases)(国外大神制作) 
-
-[v2rayNG](https://github.com/2dust/v2rayNG/releases)
-
-电脑端推荐:
-
-[karing](https://github.com/KaringX/karing/releases/download/v1.1.2.606/karing_1.1.2.606_windows_x64.exe)(免费开源点击即可下载)
-
-[v2ray](https://github.com/2dust/v2rayN/releases)(推荐)
-
-[Clash-Verge](https://github.com/clash-verge-rev/clash-verge-rev/releases)
-
-[hiddify](https://github.com/hiddify/hiddify-next/releases)(国外大神制作) 
-
-## 服务器推荐
-
-akile的dns解锁流媒体vps [akile](https://akile.io/register?aff_code=99532291-0323-491e-bdd7-fbcfebbd1fa5)
-
-
-## 欢迎添加小⭐⭐
-
-
- 
-## 免责声明:
-* 本程序仅供学习了解, 非盈利目的，请于下载后 24 小时内删除, 不得用作任何商业用途, 文字、数据及图片均有所属版权, 如转载须注明来源。
-* 使用本程序必循遵守部署免责声明。使用本程序必循遵守部署服务器所在地、所在国家和用户所在国家的法律法规, 程序作者不对使用者任何不当行为负责。
-
-
-```
-
-## 贡献
-
-欢迎提交 Issue 和 Pull Request！
-
-## 开源协议
-
-MIT License
-
-维护者：Zhong Yuan
-
