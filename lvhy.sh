@@ -2,9 +2,43 @@
 
 # Script for Sing-Box Hysteria2 & Reality Management
 
+# --- 统计信息文件 ---
+STATS_FILE="$(dirname "$0")/.lvhy_stats"
+
+# --- 统计函数 ---
+update_run_stats() {
+    local today total today_str
+    today_str=$(date +%Y-%m-%d)
+    if [ -f "$STATS_FILE" ]; then
+        source "$STATS_FILE"
+    else
+        RUN_TOTAL=0
+        RUN_TODAY=0
+        RUN_TODAY_DATE="$today_str"
+    fi
+    if [ "$RUN_TODAY_DATE" = "$today_str" ]; then
+        RUN_TODAY=$((RUN_TODAY+1))
+    else
+        RUN_TODAY=1
+        RUN_TODAY_DATE="$today_str"
+    fi
+    RUN_TOTAL=$((RUN_TOTAL+1))
+    cat > "$STATS_FILE" <<EOF
+RUN_TOTAL=$RUN_TOTAL
+RUN_TODAY=$RUN_TODAY
+RUN_TODAY_DATE="$RUN_TODAY_DATE"
+EOF
+}
+
 # --- Author Information ---
 AUTHOR_NAME="Zhong Yuan"
 QUICK_CMD_NAME="k"
+
+# --- 统计信息初始化 ---
+update_run_stats
+if [ -f "$STATS_FILE" ]; then
+    source "$STATS_FILE"
+fi
 
 # --- Configuration ---
 SINGBOX_INSTALL_PATH_EXPECTED="/usr/local/bin/sing-box"
@@ -66,6 +100,7 @@ print_author_info() {
     echo -e "${MAGENTA}${BOLD}================================================${NC}"
     echo -e " ${YELLOW}作者:${NC}      ${GREEN}${AUTHOR_NAME}${NC}"
     echo -e " ${YELLOW}快捷启动指令:${NC} ${GREEN}${QUICK_CMD_NAME}${NC} (全局输入即可快速启动本脚本)"
+    echo -e " ${YELLOW}今日运行次数:${NC} ${GREEN}${RUN_TODAY}${NC}   ${YELLOW}总运行次数:${NC} ${GREEN}${RUN_TOTAL}${NC}"
     echo -e "${MAGENTA}${BOLD}================================================${NC}"
 }
 
