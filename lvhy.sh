@@ -196,27 +196,27 @@ find_and_set_singbox_cmd() {
 
 
 get_server_ip() {
-    SERVER_IP=$(curl -s --max-time 5 ip.sb || curl -s --max-time 5 https://api.ipify.org || curl -s --max-time 5 https://checkip.amazonaws.com)
-    if [ -z "$SERVER_IP" ]; then
-        warn "无法自动获取服务器公网 IP。你可能需要手动配置客户端。"
-        read -p "请输入你的服务器公网 IP (留空则尝试从hostname获取): " MANUAL_SERVER_IP
-        if [ -n "$MANUAL_SERVER_IP" ]; then
-            SERVER_IP="$MANUAL_SERVER_IP"
-        else
-            SERVER_IP=$(hostname -I | awk '{print $1}')
-            if [ -z "$SERVER_IP" ]; then
-                warn "无法从hostname获取IP，请确保网络连接正常或手动输入。"
-            fi
-        fi
+    local ips=()
+    ips+=($(curl -s --max-time 5 https://api64.ipify.org))
+    ips+=($(curl -s --max-time 5 https://api.ipify.org))
+    ips+=($(hostname -I | tr ' ' '\n' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$'))
+    ips+=($(hostname -I | tr ' ' '\n' | grep -E '^[0-9a-fA-F:]+$'))
+    local uniq_ips=($(echo "${ips[@]}" | tr ' ' '\n' | sort -u | grep -v '^$'))
+    if [ ${#uniq_ips[@]} -eq 0 ]; then
+        warn "未能自动检测到公网IP，请手动输入。"
+        read -p "请输入你的服务器公网IP: " SERVER_IP
+    elif [ ${#uniq_ips[@]} -eq 1 ]; then
+        SERVER_IP="${uniq_ips[0]}"
+        info "检测到服务器IP: $SERVER_IP"
+    else
+        echo "检测到多个IP地址："
+        for i in "${!uniq_ips[@]}"; do
+            echo "  $((i+1)). ${uniq_ips[$i]}"
+        done
+        read -p "请选择要使用的IP地址（输入序号）: " ip_choice
+        SERVER_IP="${uniq_ips[$((ip_choice-1))]}"
+        info "你选择的服务器IP: $SERVER_IP"
     fi
-    if [[ "$SERVER_IP" =~ ^10\. || "$SERVER_IP" =~ ^172\.(1[6-9]|2[0-9]|3[0-1])\. || "$SERVER_IP" =~ ^192\.168\. ]]; then
-        warn "检测到的 IP (${SERVER_IP}) 似乎是私有IP。如果这是公网服务器，请手动输入正确的公网IP。"
-        read -p "请再次输入你的服务器公网 IP (如果上面的IP不正确): " OVERRIDE_SERVER_IP
-        if [ -n "$OVERRIDE_SERVER_IP" ]; then
-            SERVER_IP="$OVERRIDE_SERVER_IP"
-        fi
-    fi
-    info "检测到服务器 IP: ${SERVER_IP}"
     LAST_SERVER_IP="$SERVER_IP"
 }
 
@@ -452,16 +452,7 @@ EOF
         }
     ],
     "route": {
-        "rules": [
-            {
-                "protocol": "dns",
-                "action": "dns"
-            }
-        ],
         "final": "direct"
-    },
-    "dns_outbound": {
-        "tag": "dns"
     }
 }
 EOF
@@ -478,6 +469,22 @@ EOF
     else
         error "配置文件语法错误。请检查 ${SINGBOX_CONFIG_FILE}"
         cat "${SINGBOX_CONFIG_FILE}"
+        echo "----------------------------------------"
+        echo "常见原因："
+        echo "1. 配置格式不兼容当前 sing-box 版本。"
+        echo "2. 路由规则或 DNS 配置有误。"
+        echo "3. 请参考 https://sing-box.sagernet.org/ 文档修正。"
+        echo "你可以选择："
+        echo "  [1] 重新生成配置文件"
+        echo "  [2] 手动编辑配置文件"
+        echo "  [3] 退出"
+        read -p "请输入选项 [1-3]: " fix_choice
+        case "$fix_choice" in
+            1) return 1 ;;
+            2) nano "$SINGBOX_CONFIG_FILE"; return 1 ;;
+            3) exit 1 ;;
+            *) echo "无效选项，退出。"; exit 1 ;;
+        esac
         return 1
     fi
 }
