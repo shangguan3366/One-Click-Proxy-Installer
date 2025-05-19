@@ -102,7 +102,7 @@ sudo bash lvhy.sh
 *   安装成功后，脚本会显示客户端导入所需的全部信息，包括文本参数和二维码（如果 `qrencode` 已安装）。请妥善保存这些信息。
 *   之后你可以使用选项 `11` 再次查看这些信息。
 
-### ❤注意事项❤
+### ❤❤❤注意事项❤❤❤  瞎写的，可不必理会！
 
 *   **配置文件**: Sing-Box 的主配置文件位于 `/usr/local/etc/sing-box/config.json`。Hysteria2 使用的自签名证书位于 `/etc/hysteria/`。
 *   **持久化信息**: 上次成功安装的导入参数会保存在 `/usr/local/etc/sing-box/.last_singbox_script_info` 文件中，以便下次运行时通过菜单查看。卸载时如果选择删除配置目录，此文件也会被删除。
