@@ -70,6 +70,14 @@ print_author_info() {
 }
 
 change_quick_cmd() {
+    # 检查脚本是否为真实文件
+    if [ ! -f "$0" ]; then
+        echo "当前脚本不是本地文件，无法设置快捷指令。"
+        echo "请用 bash /root/lvhy.sh 方式运行本脚本后再设置快捷指令。"
+        read -n 1 -s -r -p "按任意键返回主菜单..."
+        echo
+        return
+    fi
     read -p "请输入你想要设置的新快捷指令（如 sbox）:" new_cmd
     if [[ -z "$new_cmd" ]]; then
         echo "未输入，操作取消。"
