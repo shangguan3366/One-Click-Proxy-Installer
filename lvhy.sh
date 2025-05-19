@@ -915,14 +915,42 @@ update_script_online() {
             echo "已更新快捷指令副本：/usr/local/bin/$QUICK_CMD_NAME"
         fi
         rm -f "$tmpfile"
-        echo "脚本已更新为最新版，请重新运行以体验新功能！"
-        read -n 1 -s -r -p "按任意键退出并重新运行..."
-        exit 0
+        echo "脚本已更新为最新版，正在重新加载..."
+        update_run_stats
+        if [ -f "$STATS_FILE" ]; then
+            source "$STATS_FILE"
+        fi
+        sleep 1
+        exec "$0"
     else
         echo "下载失败，请检查网络或稍后重试。"
         read -n 1 -s -r -p "按任意键返回主菜单..."
         echo
     fi
+}
+
+toolbox_menu() {
+    while true; do
+        clear
+        echo -e "${MAGENTA}${BOLD}================ 工具箱 ================${NC}"
+        echo "  1. 更新 Sing-box 内核 (使用官方beta脚本)"
+        echo "  0. 返回主菜单"
+        echo -e "${MAGENTA}${BOLD}========================================${NC}"
+        read -p "请输入选项 [0-1]: " tb_choice
+        case "$tb_choice" in
+            1)
+                install_singbox_core && manage_singbox "restart"
+                read -n 1 -s -r -p "按任意键返回工具箱..."
+                ;;
+            0)
+                break
+                ;;
+            *)
+                echo "无效选项，请输入 0 或 1。"
+                sleep 1
+                ;;
+        esac
+    done
 }
 
 # --- Main Menu ---
@@ -946,7 +974,7 @@ show_menu() {
     echo "  11. 显示上次保存的导入信息 (含二维码)"
     echo "------------------------------------------------"
     echo -e "${RED}${BOLD}其他选项:${NC}"
-    echo "  12. 更新 Sing-box 内核 (使用官方beta脚本)"
+    echo "  12. 工具箱"
     echo "  13. 卸载 Sing-box"
     echo "  14. 更改快捷指令"
     echo "  15. 在线更新脚本"
@@ -966,7 +994,7 @@ show_menu() {
         9) manage_singbox "view_config" ;;
         10) manage_singbox "edit_config" ;;
         11) show_current_import_info ;;
-        12) install_singbox_core && manage_singbox "restart" ;;
+        12) toolbox_menu ;;
         13) uninstall_singbox ;;
         14) change_quick_cmd ;;
         15) update_script_online ;;
