@@ -9,7 +9,7 @@
 
 ## 功能特性
 
-👑 ** 一键安装 Hysteria、Tuic、Trojan、等代理协议
+👑 ** 一键安装 Hysteria2、Tuic、Trojan、等代理协议
 🍰 ** 支持 BBR 网络加速，快速部署BBR v3 内核★
 ⚙️ ** (自动化脚本，极简操作）**
 📢 ** 支持架构：** `x86_64` & `aarch64`  🌐 ** 适配系统：** Debian/Ubuntu 系列
