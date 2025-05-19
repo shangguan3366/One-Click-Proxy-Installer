@@ -614,7 +614,7 @@ display_and_store_config_info() {
         qrencode_is_ready=true
     fi
 
-    echo -e "----------------------------------------------------"
+    echo -e "${MAGENTA}${BOLD}================= 节点信息 =================${NC}"
     if [ "$mode" == "all" ] || [ "$mode" == "hysteria2" ]; then
         LAST_HY2_LINK="hy2://${LAST_HY2_PASSWORD}@${LAST_SERVER_IP}:${LAST_HY2_PORT}?sni=${LAST_HY2_MASQUERADE_CN}&alpn=h3&insecure=1#Hy2-${LAST_SERVER_IP}-$(date +%s)"
         echo -e "${GREEN}${BOLD} Hysteria2 配置信息:${NC}"
@@ -625,14 +625,12 @@ display_and_store_config_info() {
         echo -e "ALPN: ${GREEN}h3${NC}"
         echo -e "允许不安全 (自签证书): ${GREEN}是/True${NC}"
         echo -e "${CYAN}Hysteria2 导入链接:${NC} ${GREEN}${LAST_HY2_LINK}${NC}"
-        
         if $qrencode_is_ready && command -v qrencode &>/dev/null; then
-            echo "Hysteria2 二维码:"
+            echo -e "${YELLOW}Hysteria2 二维码:${NC}"
             qrencode -t ANSIUTF8 "${LAST_HY2_LINK}"
         fi
-        echo -e "----------------------------------------------------"
+        echo -e "${MAGENTA}${BOLD}--------------------------------------------${NC}"
     fi
-
     if [ "$mode" == "all" ] || [ "$mode" == "reality" ]; then
         LAST_VLESS_LINK="vless://${LAST_REALITY_UUID}@${LAST_SERVER_IP}:${LAST_REALITY_PORT}?security=reality&sni=${LAST_REALITY_SNI}&fp=${LAST_REALITY_FINGERPRINT}&pbk=${LAST_REALITY_PUBLIC_KEY}&sid=${LAST_REALITY_SHORT_ID}&flow=xtls-rprx-vision&type=tcp#Reality-${LAST_SERVER_IP}-$(date +%s)"
         echo -e "${GREEN}${BOLD} Reality (VLESS) 配置信息:${NC}"
@@ -647,12 +645,11 @@ display_and_store_config_info() {
         echo -e "ShortID: ${GREEN}${LAST_REALITY_SHORT_ID}${NC}"
         echo -e "Flow: ${GREEN}xtls-rprx-vision${NC}"
         echo -e "${CYAN}VLESS Reality 导入链接:${NC} ${GREEN}${LAST_VLESS_LINK}${NC}"
-
         if $qrencode_is_ready && command -v qrencode &>/dev/null; then
-            echo "Reality (VLESS) 二维码:"
+            echo -e "${YELLOW}Reality (VLESS) 二维码:${NC}"
             qrencode -t ANSIUTF8 "${LAST_VLESS_LINK}"
         fi
-        echo -e "----------------------------------------------------"
+        echo -e "${MAGENTA}${BOLD}--------------------------------------------${NC}"
     fi
     save_persistent_info
 }
@@ -1226,31 +1223,29 @@ toolbox_menu() {
 
 # --- Main Menu ---
 show_menu() {
-    clear 
+    clear
     print_author_info
-
-    echo -e "${GREEN}${BOLD}安装选项:${NC}"
+    echo -e "${MAGENTA}${BOLD}=================【安装相关】==================${NC}"
     echo "  1. 安装 Hysteria2 + Reality (共存)"
     echo "  2. 单独安装 Hysteria2"
     echo "  3. 单独安装 Reality (VLESS)"
-    echo "------------------------------------------------"
-    echo -e "${YELLOW}${BOLD}管理选项:${NC}"
+    echo -e "${MAGENTA}${BOLD}=================【管理相关】==================${NC}"
     echo "  4. 启动 Sing-box 服务"
     echo "  5. 停止 Sing-box 服务"
     echo "  6. 重启 Sing-box 服务"
     echo "  7. 查看 Sing-box 服务状态"
     echo "  8. 查看 Sing-box 实时日志"
     echo "  9. 查看当前配置文件"
-    echo "  10. 编辑当前配置文件 (nano/vim)"
-    echo "  11. 显示“节点”的导入信息 (含二维码)"
-    echo "------------------------------------------------"
-    echo -e "${RED}${BOLD}其他选项:${NC}"
-    echo "  12. 工具箱"
-    echo "  13. 卸载 Sing-box"
-    echo "  14. 更改快捷指令"
-    echo "  15. 在线更新脚本"
+    echo " 10. 编辑当前配置文件 (nano/vim)"
+    echo " 11. 显示"节点"的导入信息 (含二维码)"
+    echo -e "${MAGENTA}${BOLD}=================【工具箱】====================${NC}"
+    echo " 12. 工具箱"
+    echo -e "${MAGENTA}${BOLD}=================【其他】======================${NC}"
+    echo " 13. 卸载 Sing-box"
+    echo " 14. 更改快捷指令"
+    echo " 15. 在线更新脚本"
     echo "  0. 退出脚本"
-    echo "================================================"
+    echo -e "${MAGENTA}${BOLD}===============================================${NC}"
     read -p "请输入选项 [0-15]: " choice
 
     case "$choice" in
