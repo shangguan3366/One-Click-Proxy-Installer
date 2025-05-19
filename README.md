@@ -67,10 +67,7 @@ sudo bash lvhy.sh
 ================================================
  Sing-Box Hysteria2 & Reality 管理脚本 
 ================================================
- 作者:      jcnf-那坨
- 网站:      https://ybfl.net
- TG 频道:   https://t.me/mffjc
- TG 交流群: https://t.me/+TDz0jE2WcAvfgmLi
+ 作者:      Zhong Yuan
 ================================================
 安装选项:
   1. 安装 Hysteria2 + Reality (共存)
