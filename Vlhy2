@@ -3,10 +3,10 @@
 # Script for Sing-Box Hysteria2 & Reality Management
 
 # --- Author Information ---
-AUTHOR_NAME="jcnf-那坨"
-WEBSITE_URL="https://ybfl.net"
-TG_CHANNEL_URL="https://t.me/mffjc"
-TG_GROUP_URL="https://t.me/+TDz0jE2WcAvfgmLi"
+AUTHOR_NAME=""#作者名字
+WEBSITE_URL="https://ybfl.net"#网站
+TG_CHANNEL_URL="https://t.me/mffjc"#TG频道
+TG_GROUP_URL="https://t.me/+TDz0jE2WcAvfgmLi"#TG交流群
 
 # --- Configuration ---
 SINGBOX_INSTALL_PATH_EXPECTED="/usr/local/bin/sing-box"
