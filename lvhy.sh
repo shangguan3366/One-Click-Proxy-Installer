@@ -88,6 +88,12 @@ BOLD='\033[1m'
 UNDERLINE='\033[4m'
 NC='\033[0m' # 无颜色
 
+# --- 通用暂停函数 ---
+pause_return_menu() {
+    echo
+    read -p "输入0返回首页，或按任意键继续..." back_choice
+}
+
 # --- 辅助函数 ---
 info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
@@ -752,10 +758,12 @@ show_current_import_info() {
     if [ -z "$LAST_INSTALL_MODE" ]; then
         warn "尚未通过此脚本安装任何配置，或上次安装信息未保留。"
         info "请先执行安装操作 (选项 1, 2, 或 3)，或者确保 ${PERSISTENT_INFO_FILE} 文件存在且包含信息。"
+        pause_return_menu
         return
     fi
     info "显示上次保存的配置信息 (${LAST_INSTALL_MODE}模式):"
     display_and_store_config_info "$LAST_INSTALL_MODE"
+    pause_return_menu
 }
 
 uninstall_singbox() {
@@ -843,16 +851,19 @@ manage_singbox() {
         start)
             systemctl start sing-box
             if systemctl is-active --quiet sing-box; then success "Sing-box 服务已启动。"; else error "Sing-box 服务启动失败。"; fi
+            pause_return_menu
             ;;
         stop)
             systemctl stop sing-box
             if ! systemctl is-active --quiet sing-box; then success "Sing-box 服务已停止。"; else error "Sing-box 服务停止失败。"; fi
+            pause_return_menu
             ;;
         restart)
             if [ -f "$SINGBOX_CONFIG_FILE" ]; then
                 info "重启前检查配置文件..."
                 if ! $SINGBOX_CMD check -c "$SINGBOX_CONFIG_FILE"; then
                     error "配置文件检查失败，无法重启。请先修复配置文件。"
+                    pause_return_menu
                     return 1
                 fi
                 success "配置文件检查通过。"
@@ -860,12 +871,15 @@ manage_singbox() {
             systemctl restart sing-box
             sleep 1
             if systemctl is-active --quiet sing-box; then success "Sing-box 服务已重启。"; else error "Sing-box 服务重启失败。"; fi
+            pause_return_menu
             ;;
         status)
             systemctl status sing-box --no-pager -l
+            pause_return_menu
             ;;
         log)
             journalctl -u sing-box -f --no-pager -n 50
+            pause_return_menu
             ;;
         view_config)
             if [ -f "$SINGBOX_CONFIG_FILE" ]; then
@@ -874,6 +888,7 @@ manage_singbox() {
             else
                 error "配置文件不存在: ${SINGBOX_CONFIG_FILE}"
             fi
+            pause_return_menu
             ;;
         edit_config)
             if [ -f "$SINGBOX_CONFIG_FILE" ]; then
@@ -883,6 +898,7 @@ manage_singbox() {
                     vim "$SINGBOX_CONFIG_FILE"
                 else
                     error "'nano' 或 'vim' 编辑器未安装。请手动编辑: ${SINGBOX_CONFIG_FILE}"
+                    pause_return_menu
                     return
                 fi
                 read -p "配置文件已编辑，是否立即重启 sing-box 服务? (y/N): " restart_confirm
@@ -892,9 +908,11 @@ manage_singbox() {
             else
                 error "配置文件不存在: ${SINGBOX_CONFIG_FILE}"
             fi
+            pause_return_menu
             ;;
         *)
             error "无效的管理操作: $action"
+            pause_return_menu
             ;;
     esac
 }
