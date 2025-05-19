@@ -936,19 +936,92 @@ toolbox_menu() {
         clear
         echo -e "${MAGENTA}${BOLD}================ 工具箱 ================${NC}"
         echo "  1. 更新 Sing-box 内核 (使用官方beta脚本)"
+        echo "  2. 开发所有端口 (一键放行0-65535，风险自负)"
+        echo "  3. 本机信息"
         echo "  0. 返回主菜单"
         echo -e "${MAGENTA}${BOLD}========================================${NC}"
-        read -p "请输入选项 [0-1]: " tb_choice
+        read -p "请输入选项 [0-3]: " tb_choice
         case "$tb_choice" in
             1)
                 install_singbox_core && manage_singbox "restart"
+                read -n 1 -s -r -p "按任意键返回工具箱..."
+                ;;
+            2)
+                echo -e "${YELLOW}警告：此操作将放行所有端口（0-65535），有极大安全风险，仅建议在受信任环境下使用！${NC}"
+                read -p "确定要继续吗？(y/N): " confirm_open
+                if [[ "$confirm_open" =~ ^[Yy]$ ]]; then
+                    if command -v ufw &>/dev/null; then
+                        sudo ufw allow 0:65535/tcp
+                        sudo ufw allow 0:65535/udp
+                        sudo ufw reload
+                        echo "已通过 ufw 放行全部端口。"
+                    elif command -v firewall-cmd &>/dev/null; then
+                        sudo firewall-cmd --permanent --add-port=0-65535/tcp
+                        sudo firewall-cmd --permanent --add-port=0-65535/udp
+                        sudo firewall-cmd --reload
+                        echo "已通过 firewalld 放行全部端口。"
+                    else
+                        echo "未检测到常见防火墙（ufw/firewalld），请手动放行端口。"
+                    fi
+                else
+                    echo "操作已取消。"
+                fi
+                read -n 1 -s -r -p "按任意键返回工具箱..."
+                ;;
+            3)
+                echo -e "${CYAN}${BOLD}\n========= 本机信息 =========${NC}"
+                # 主机名、系统
+                echo -e "${YELLOW}主机名:${NC}      $(hostname)"
+                echo -e "${YELLOW}系统:${NC}        $(uname -o)"
+                echo -e "${YELLOW}Linux版本:${NC}   $(uname -r)"
+                echo -e "${YELLOW}发行版:${NC}      $(. /etc/os-release 2>/dev/null; echo $PRETTY_NAME)"
+                # CPU
+                echo -e "${YELLOW}CPU架构:${NC}     $(uname -m)"
+                echo -e "${YELLOW}CPU型号:${NC}     $(awk -F: '/model name/ {print $2; exit}' /proc/cpuinfo | xargs)"
+                echo -e "${YELLOW}CPU核心数:${NC}   $(nproc)"
+                echo -e "${YELLOW}CPU占用:${NC}     $(top -bn1 | awk '/Cpu/ {print $2"%"; exit}')"
+                # 内存
+                mem_total=$(free -h | awk '/Mem:/ {print $2}')
+                mem_used=$(free -h | awk '/Mem:/ {print $3}')
+                swap_total=$(free -h | awk '/Swap:/ {print $2}')
+                swap_used=$(free -h | awk '/Swap:/ {print $3}')
+                echo -e "${YELLOW}物理内存:${NC}    $mem_used / $mem_total"
+                echo -e "${YELLOW}虚拟内存:${NC}    $swap_used / $swap_total"
+                # 硬盘
+                disk_total=$(df -h --total | awk '/total/ {print $2}')
+                disk_used=$(df -h --total | awk '/total/ {print $3}')
+                echo -e "${YELLOW}硬盘占用:${NC}    $disk_used / $disk_total"
+                # 流量
+                rx=$(cat /proc/net/dev | awk '/:/ {sum+=$2} END {print sum/1024/1024 " MB"}')
+                tx=$(cat /proc/net/dev | awk '/:/ {sum+=$10} END {print sum/1024/1024 " MB"}')
+                echo -e "${YELLOW}总接收流量:${NC}  $rx"
+                echo -e "${YELLOW}总发送流量:${NC}  $tx"
+                # 拥堵算法
+                cc_alg=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null)
+                echo -e "${YELLOW}网络拥堵算法:${NC} $cc_alg"
+                # 公网IP
+                ipv4=$(curl -s --max-time 3 https://api.ipify.org)
+                ipv6=$(curl -s --max-time 3 https://api6.ipify.org)
+                echo -e "${YELLOW}公网IPv4:${NC}    $ipv4"
+                echo -e "${YELLOW}公网IPv6:${NC}    $ipv6"
+                # 运营商与地理位置
+                ipinfo=$(curl -s --max-time 5 ipinfo.io/json)
+                isp=$(echo "$ipinfo" | grep 'org' | awk -F: '{print $2}' | tr -d ' ",')
+                loc=$(echo "$ipinfo" | grep 'city' | awk -F: '{print $2}' | tr -d ' ",')
+                country=$(echo "$ipinfo" | grep 'country' | awk -F: '{print $2}' | tr -d ' ",')
+                echo -e "${YELLOW}运营商:${NC}      $isp"
+                echo -e "${YELLOW}地理位置:${NC}    $loc, $country"
+                # 系统时间与运行时长
+                echo -e "${YELLOW}系统时间:${NC}    $(date '+%Y-%m-%d %H:%M:%S')"
+                echo -e "${YELLOW}运行时长:${NC}    $(uptime -p)"
+                echo -e "${CYAN}${BOLD}==============================${NC}\n"
                 read -n 1 -s -r -p "按任意键返回工具箱..."
                 ;;
             0)
                 break
                 ;;
             *)
-                echo "无效选项，请输入 0 或 1。"
+                echo "无效选项，请输入 0-3。"
                 sleep 1
                 ;;
         esac
