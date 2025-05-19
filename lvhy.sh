@@ -862,6 +862,33 @@ manage_singbox() {
     esac
 }
 
+update_script_online() {
+    local update_url="https://github.com/shangguan3366/One-Click-Proxy-Installer/raw/main/lvhy.sh"
+    local tmpfile="/tmp/lvhy_update_$$.sh"
+    echo "正在从远程仓库下载最新版脚本..."
+    if curl -fsSL "$update_url" -o "$tmpfile"; then
+        chmod +x "$tmpfile"
+        # 覆盖当前脚本
+        if [ -f "$0" ] && [ -w "$0" ]; then
+            cp "$tmpfile" "$0"
+            echo "已更新当前脚本：$0"
+        fi
+        # 覆盖快捷指令副本
+        if [ -n "$QUICK_CMD_NAME" ] && [ -f "/usr/local/bin/$QUICK_CMD_NAME" ]; then
+            sudo cp "$tmpfile" "/usr/local/bin/$QUICK_CMD_NAME"
+            sudo chmod +x "/usr/local/bin/$QUICK_CMD_NAME"
+            echo "已更新快捷指令副本：/usr/local/bin/$QUICK_CMD_NAME"
+        fi
+        rm -f "$tmpfile"
+        echo "脚本已更新为最新版，请重新运行以体验新功能！"
+        read -n 1 -s -r -p "按任意键退出并重新运行..."
+        exit 0
+    else
+        echo "下载失败，请检查网络或稍后重试。"
+        read -n 1 -s -r -p "按任意键返回主菜单..."
+        echo
+    fi
+}
 
 # --- Main Menu ---
 show_menu() {
@@ -887,9 +914,10 @@ show_menu() {
     echo "  12. 更新 Sing-box 内核 (使用官方beta脚本)"
     echo "  13. 卸载 Sing-box"
     echo "  14. 更改快捷指令"
+    echo "  15. 在线更新脚本"
     echo "  0. 退出脚本"
     echo "================================================"
-    read -p "请输入选项 [0-14]: " choice
+    read -p "请输入选项 [0-15]: " choice
 
     case "$choice" in
         1) install_hysteria2_reality ;;
@@ -906,8 +934,9 @@ show_menu() {
         12) install_singbox_core && manage_singbox "restart" ;;
         13) uninstall_singbox ;;
         14) change_quick_cmd ;;
+        15) update_script_online ;;
         0) exit 0 ;;
-        *) error "无效选项，请输入 0 到 14 之间的数字。" ;;
+        *) error "无效选项，请输入 0 到 15 之间的数字。" ;;
     esac
     echo "" 
 }
