@@ -3,7 +3,7 @@
 # Script for Sing-Box Hysteria2 & Reality Management
 
 # --- 统计信息文件 ---
-STATS_FILE="$(dirname "$0")/.lvhy_stats"
+STATS_FILE="$HOME/.oneclick_stats"
 
 # --- 统计函数 ---
 update_run_stats() {
@@ -95,6 +95,8 @@ error() { echo -e "${RED}[ERROR]${NC} $1"; }
 success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 
 print_author_info() {
+    echo -e "${MAGENTA}${BOLD}================================================${NC}"
+    echo -e "${BOLD}${YELLOW} 项目名称: One-Click-Proxy-Installer ${NC}"
     echo -e "${MAGENTA}${BOLD}================================================${NC}"
     echo -e "${CYAN}${BOLD} Sing-Box Hysteria2 & Reality 管理脚本 ${NC}"
     echo -e "${MAGENTA}${BOLD}================================================${NC}"
@@ -362,7 +364,7 @@ generate_reality_credentials() {
         fi
     fi
     info "使用命令 '$SINGBOX_CMD' 生成 Reality UUID 和 Keypair..."
-    
+
     info "执行: $SINGBOX_CMD generate uuid"
     REALITY_UUID_VAL=$($SINGBOX_CMD generate uuid)
     CMD_EXIT_CODE=$?
@@ -384,10 +386,10 @@ generate_reality_credentials() {
     fi
     info "原始 Keypair 输出:"
     echo "$KEY_PAIR_OUTPUT"
-    
+
     REALITY_PRIVATE_KEY_VAL=$(echo "$KEY_PAIR_OUTPUT" | awk -F': ' '/PrivateKey:/ {print $2}')
     REALITY_PUBLIC_KEY_VAL=$(echo "$KEY_PAIR_OUTPUT" | awk -F': ' '/PublicKey:/ {print $2}')
-    
+
     REALITY_PRIVATE_KEY_VAL=$(echo "${REALITY_PRIVATE_KEY_VAL}" | xargs)
     REALITY_PUBLIC_KEY_VAL=$(echo "${REALITY_PUBLIC_KEY_VAL}" | xargs)
 
@@ -617,7 +619,7 @@ display_and_store_config_info() {
         echo -e "ALPN: ${GREEN}h3${NC}"
         echo -e "允许不安全 (自签证书): ${GREEN}是/True${NC}"
         echo -e "${CYAN}Hysteria2 导入链接:${NC} ${GREEN}${LAST_HY2_LINK}${NC}"
-        
+
         if $qrencode_is_ready && command -v qrencode &>/dev/null; then
             echo "Hysteria2 二维码:"
             qrencode -t ANSIUTF8 "${LAST_HY2_LINK}"
@@ -676,7 +678,7 @@ install_hysteria2_reality() {
         "$LAST_HY2_PORT" "$LAST_HY2_PASSWORD" "$LAST_HY2_MASQUERADE_CN" \
         "$LAST_REALITY_PORT" "$LAST_REALITY_UUID" "$TEMP_REALITY_PRIVATE_KEY" "$LAST_REALITY_SNI" \
         || return 1
-    
+
     create_systemd_service
     start_singbox_service || return 1
 
@@ -698,7 +700,7 @@ install_hysteria2_only() {
     info "生成的 Hysteria2 密码: ${LAST_HY2_PASSWORD}"
 
     generate_self_signed_cert "$LAST_HY2_MASQUERADE_CN" || return 1
-    
+
     LAST_REALITY_PORT=""
     LAST_REALITY_UUID=""
     LAST_REALITY_PUBLIC_KEY=""
@@ -728,7 +730,7 @@ install_reality_only() {
     LAST_REALITY_SNI=${temp_reality_sni:-$DEFAULT_REALITY_SNI}
 
     generate_reality_credentials || return 1
-    
+
     LAST_HY2_PORT=""
     LAST_HY2_PASSWORD=""
     LAST_HY2_MASQUERADE_CN=""
@@ -738,7 +740,7 @@ install_reality_only() {
         "" "" "" \
         "$LAST_REALITY_PORT" "$LAST_REALITY_UUID" "$TEMP_REALITY_PRIVATE_KEY" "$LAST_REALITY_SNI" \
         || return 1
-        
+
     create_systemd_service
     start_singbox_service || return 1
 
@@ -781,7 +783,7 @@ uninstall_singbox() {
     elif [ -f "$SINGBOX_INSTALL_PATH_EXPECTED" ]; then
         singbox_exe_to_remove="$SINGBOX_INSTALL_PATH_EXPECTED"
     fi
-    
+
     local official_install_path="/usr/local/bin/sing-box"
     if [ -f "$official_install_path" ]; then
         if [ -n "$singbox_exe_to_remove" ] && [ "$singbox_exe_to_remove" != "$official_install_path" ]; then
@@ -798,7 +800,7 @@ uninstall_singbox() {
     else
         warn "未找到明确的 sing-box 执行文件进行删除 (已检查 ${SINGBOX_INSTALL_PATH_EXPECTED} 和 ${official_install_path})。"
     fi
-    
+
     read -p "是否删除配置文件目录 ${SINGBOX_CONFIG_DIR} (包含导入信息缓存)? (y/N): " delete_config_dir_confirm
     if [[ "$delete_config_dir_confirm" =~ ^[Yy]$ ]]; then
         if [ -d "$SINGBOX_CONFIG_DIR" ]; then
@@ -808,7 +810,7 @@ uninstall_singbox() {
     else
         info "配置文件目录 (${SINGBOX_CONFIG_DIR}) 已保留。"
     fi
-    
+
     read -p "是否删除 Hysteria2 证书目录 ${HYSTERIA_CERT_DIR}? (y/N): " delete_cert_dir_confirm
      if [[ "$delete_cert_dir_confirm" =~ ^[Yy]$ ]]; then
         if [ -d "$HYSTERIA_CERT_DIR" ]; then
@@ -1013,7 +1015,8 @@ load_persistent_info
 # Main loop
 while true; do
     show_menu
-    read -n 1 -s -r -p "按任意键返回主菜单 (或按 Ctrl+C 退出)..."
+    # 只在需要时 pause，show_menu 内部不再 pause
+    # read -n 1 -s -r -p "按任意键返回主菜单 (或按 Ctrl+C 退出)..."
 done
 
 # --- 脚本末尾自动化一键设置快捷命令功能 ---
