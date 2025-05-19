@@ -64,9 +64,6 @@ print_author_info() {
     echo -e "${CYAN}${BOLD} Sing-Box Hysteria2 & Reality 管理脚本 ${NC}"
     echo -e "${MAGENTA}${BOLD}================================================${NC}"
     echo -e " ${YELLOW}作者:${NC}      ${GREEN}${AUTHOR_NAME}${NC}"
-    echo -e " ${YELLOW}网站:${NC}      ${UNDERLINE}${BLUE}${WEBSITE_URL}${NC}"
-    echo -e " ${YELLOW}TG 频道:${NC}   ${UNDERLINE}${BLUE}${TG_CHANNEL_URL}${NC}"
-    echo -e " ${YELLOW}TG 交流群:${NC} ${UNDERLINE}${BLUE}${TG_GROUP_URL}${NC}"
     echo -e "${MAGENTA}${BOLD}================================================${NC}"
 }
 
