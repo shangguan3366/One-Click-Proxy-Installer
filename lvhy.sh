@@ -435,14 +435,12 @@ EOF
     },
     "dns": {
         "servers": [
-            { "address": "8.8.8.8" },
-            { "address": "1.1.1.1" },
-            { "address": "223.5.5.5" },
-            { "address": "119.29.29.29" }
+            { "tag": "google", "address": "8.8.8.8" },
+            { "tag": "cloudflare", "address": "1.1.1.1" },
+            { "tag": "aliyun", "address": "223.5.5.5" },
+            { "tag": "tencent", "address": "119.29.29.29" }
         ],
-        "strategy": "ipv4_only",
-        "disable_cache": false,
-        "independent_cache": false
+        "strategy": "ipv4_only"
     },
     "inbounds": [
         ${final_inbounds_json}
@@ -451,24 +449,19 @@ EOF
         {
             "type": "direct",
             "tag": "direct"
-        },
-        {
-            "type": "block",
-            "tag": "block"
-        },
-        {
-            "type": "dns",
-            "tag": "dns-out"
         }
     ],
     "route": {
         "rules": [
             {
                 "protocol": "dns",
-                "outbound": "dns-out"
+                "action": "dns"
             }
         ],
         "final": "direct"
+    },
+    "dns_outbound": {
+        "tag": "dns"
     }
 }
 EOF
