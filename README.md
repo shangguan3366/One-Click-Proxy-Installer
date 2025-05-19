@@ -1,5 +1,5 @@
 # One-Click-Proxy-Installer/一键安装脚本
-### 🌟 简介
+### 🌟 简介    ✨快捷启动脚本"k"
 # Sing-Box Hysteria2 & Reality 快速配置脚本
 ★真正适合小白自己折腾的脚本！
 一个用于在 Linux 服务器上快速安装、配置和管理 [Sing-Box](https://github.com/SagerNet/sing-box) 的 Shell 脚本，特别针对 Hysteria2 和 VLESS Reality 协议进行了优化。
