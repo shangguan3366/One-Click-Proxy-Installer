@@ -1015,7 +1015,8 @@ load_persistent_info
 # Main loop
 while true; do
     show_menu
-    read -n 1 -s -r -p "按任意键返回主菜单 (或按 Ctrl+C 退出)..."
+    # 只在需要时 pause，show_menu 内部不再 pause
+    # read -n 1 -s -r -p "按任意键返回主菜单 (或按 Ctrl+C 退出)..."
 done
 
 # --- 脚本末尾自动化一键设置快捷命令功能 ---
