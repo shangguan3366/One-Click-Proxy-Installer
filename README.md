@@ -1,5 +1,5 @@
 # Sing-Box Hysteria2 & Reality 快速配置脚本
-
+★真正适合小白自己折腾的脚本！
 一个用于在 Linux 服务器上快速安装、配置和管理 [Sing-Box](https://github.com/SagerNet/sing-box) 的 Shell 脚本，特别针对 Hysteria2 和 VLESS Reality 协议进行了优化。
 
 ## 特性
@@ -117,20 +117,100 @@ sudo bash lvhy.sh
     sudo ufw reload
     ```
 
-## 贡献
+###
 
-欢迎提交 Pull Requests 或在 Issues 中报告错误、提出建议。
+宝宝们如果觉得好用，记得点个小星星⭐️哦
 
-## 免责声明
 
+
+**在线订阅转换网站**(支持多种协议互转):[订阅转换](https://sub.crazyact.com/)
+
+
+#
+## ❤ ✨VPS工具箱推荐:^^目前我正在使用的工具箱>✨
+
+
+>
+
+
+# 1.(老王一键工具箱)可用于代理节点的搭建. 快捷启动"k",建议在本工具中改为"w"
+>curl -fsSL https://raw.githubusercontent.com/eooce/ssh_tool/main/ssh_tool.sh -o ssh_tool.sh && chmod +x ssh_tool.sh && ./ssh_tool.sh
+
+# 2.(科技lion)#科技lion一键脚本. 快捷启动为"k"，为避免冲突可改为"i"
+>bash <(curl -sL kejilion.sh)
+
+
+
+
+>
+
+
+
+
+#
+安卓/ios/mac/linux/win等平台详见:[支持hysteia2三方应用](https://v2.hysteria.network/zh/docs/getting-started/3rd-party-apps/)
+
+ios端推荐:
+免费开源❤Karing❤ 强烈推荐
+hiddfy,Shadowrocket等
+
+安卓端推荐：
+
+[karing](https://github.com/KaringX/karing/releases/tag/v1.1.2.606)(点资产后缀为apk的最新版下载)
+
+[nekobox](https://github.com/MatsuriDayo/NekoBoxForAndroid/releases)
+
+[husi](https://github.com/xchacha20-poly1305/husi/releases)(非常不错+nice)
+
+[Clash-Meta](https://github.com/MetaCubeX/ClashMetaForAndroid/releases)
+
+[hiddify](https://github.com/hiddify/hiddify-next/releases)(国外大神制作) 
+
+[v2rayNG](https://github.com/2dust/v2rayNG/releases)
+
+电脑端推荐:
+
+[karing](https://github.com/KaringX/karing/releases/download/v1.1.2.606/karing_1.1.2.606_windows_x64.exe)(免费开源点击即可下载)
+
+[v2ray](https://github.com/2dust/v2rayN/releases)(推荐)
+
+[Clash-Verge](https://github.com/clash-verge-rev/clash-verge-rev/releases)
+
+[hiddify](https://github.com/hiddify/hiddify-next/releases)(国外大神制作) 
+
+## 服务器推荐
+
+akile的dns解锁流媒体vps [akile](https://akile.io/register?aff_code=99532291-0323-491e-bdd7-fbcfebbd1fa5)
+
+
+## 欢迎添加小⭐⭐
+
+
+ 
+## 免责声明:
 *   本脚本仅为学习和测试目的提供。
 *   请遵守当地法律法规，不要将此脚本用于非法用途。
 *   作者不对使用此脚本可能造成的任何后果负责。
+
 
 ## 致谢
 
 *   [Sing-Box](https://github.com/SagerNet/sing-box) 项目及其开发者。
 *   所有为开源社区做出贡献的人。
+
+
+
+## 贡献
+
+欢迎提交 Pull Requests 或在 Issues 中报告错误、提出建议。
+
+## 开源协议
+
+MIT License
+
+维护者：Zhong Yuan
+
+
 
 
 
