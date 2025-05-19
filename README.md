@@ -56,7 +56,6 @@ hysteria2一键安装(轻量级超低占用)
 宝宝们如果觉得好用，记得点个小星星⭐️哦
 
 
-☆支持安装xanmod内核使用bbrv3加速(https://github.com/ylx2016/Linux-NetSpeed)
 
 **在线订阅转换网站**(支持多种协议互转):[订阅转换](https://sub.crazyact.com/)
 
