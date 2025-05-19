@@ -96,7 +96,9 @@ success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 
 print_author_info() {
     echo -e "${MAGENTA}${BOLD}================================================${NC}"
-    echo -e "${CYAN}${BOLD} One-Click-Proxy-Installer | Sing-Box Hysteria2 & Reality 管理脚本 ${NC}"
+    echo -e "${BOLD}${YELLOW} 项目名称: One-Click-Proxy-Installer ${NC}"
+    echo -e "${MAGENTA}${BOLD}================================================${NC}"
+    echo -e "${CYAN}${BOLD} Sing-Box Hysteria2 & Reality 管理脚本 ${NC}"
     echo -e "${MAGENTA}${BOLD}================================================${NC}"
     echo -e " ${YELLOW}作者:${NC}      ${GREEN}${AUTHOR_NAME}${NC}"
     echo -e " ${YELLOW}快捷启动指令:${NC} ${GREEN}${QUICK_CMD_NAME}${NC} (全局输入即可快速启动本脚本)"
