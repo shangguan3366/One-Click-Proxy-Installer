@@ -69,6 +69,23 @@ print_author_info() {
     echo -e "${MAGENTA}${BOLD}================================================${NC}"
 }
 
+change_quick_cmd() {
+    read -p "请输入你想要设置的新快捷指令（如 sbox）:" new_cmd
+    if [[ -z "$new_cmd" ]]; then
+        echo "未输入，操作取消。"
+        return
+    fi
+    if [ "$new_cmd" = "lvhy.sh" ]; then
+        echo "不能与脚本本身同名。"
+        return
+    fi
+    sudo cp "$0" "/usr/local/bin/$new_cmd"
+    sudo chmod +x "/usr/local/bin/$new_cmd"
+    export QUICK_CMD_NAME="$new_cmd"
+    sed -i "s/^QUICK_CMD_NAME=.*/QUICK_CMD_NAME=\"$new_cmd\"/" "$0"
+    echo "快捷指令已设置为：$new_cmd。你可以在任意目录输入 $new_cmd 快速启动本脚本。"
+}
+
 load_persistent_info() {
     if [ -f "$PERSISTENT_INFO_FILE" ]; then
         info "加载上次保存的配置信息从: $PERSISTENT_INFO_FILE"
@@ -909,20 +926,3 @@ if [ "$(basename $0)" != "$QUICK_CMD_NAME" ] && [ ! -f "/usr/local/bin/$QUICK_CM
         echo "\n现在你可以直接输入 $QUICK_CMD_NAME 快速管理 Sing-Box 节点了！"
     fi
 fi
-
-change_quick_cmd() {
-    read -p "请输入你想要设置的新快捷指令（如 sbox）：" new_cmd
-    if [[ -z "$new_cmd" ]]; then
-        echo "未输入，操作取消。"
-        return
-    fi
-    if [ "$new_cmd" = "lvhy.sh" ]; then
-        echo "不能与脚本本身同名。"
-        return
-    fi
-    sudo cp "$0" "/usr/local/bin/$new_cmd"
-    sudo chmod +x "/usr/local/bin/$new_cmd"
-    export QUICK_CMD_NAME="$new_cmd"
-    sed -i "s/^QUICK_CMD_NAME=.*/QUICK_CMD_NAME=\"$new_cmd\"/" "$0"
-    echo "快捷指令已设置为：$new_cmd。你可以在任意目录输入 $new_cmd 快速启动本脚本。"
-}
