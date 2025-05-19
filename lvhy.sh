@@ -364,7 +364,7 @@ generate_reality_credentials() {
         fi
     fi
     info "使用命令 '$SINGBOX_CMD' 生成 Reality UUID 和 Keypair..."
-
+    
     info "执行: $SINGBOX_CMD generate uuid"
     REALITY_UUID_VAL=$($SINGBOX_CMD generate uuid)
     CMD_EXIT_CODE=$?
@@ -386,10 +386,10 @@ generate_reality_credentials() {
     fi
     info "原始 Keypair 输出:"
     echo "$KEY_PAIR_OUTPUT"
-
+    
     REALITY_PRIVATE_KEY_VAL=$(echo "$KEY_PAIR_OUTPUT" | awk -F': ' '/PrivateKey:/ {print $2}')
     REALITY_PUBLIC_KEY_VAL=$(echo "$KEY_PAIR_OUTPUT" | awk -F': ' '/PublicKey:/ {print $2}')
-
+    
     REALITY_PRIVATE_KEY_VAL=$(echo "${REALITY_PRIVATE_KEY_VAL}" | xargs)
     REALITY_PUBLIC_KEY_VAL=$(echo "${REALITY_PUBLIC_KEY_VAL}" | xargs)
 
@@ -619,7 +619,7 @@ display_and_store_config_info() {
         echo -e "ALPN: ${GREEN}h3${NC}"
         echo -e "允许不安全 (自签证书): ${GREEN}是/True${NC}"
         echo -e "${CYAN}Hysteria2 导入链接:${NC} ${GREEN}${LAST_HY2_LINK}${NC}"
-
+        
         if $qrencode_is_ready && command -v qrencode &>/dev/null; then
             echo "Hysteria2 二维码:"
             qrencode -t ANSIUTF8 "${LAST_HY2_LINK}"
@@ -678,7 +678,7 @@ install_hysteria2_reality() {
         "$LAST_HY2_PORT" "$LAST_HY2_PASSWORD" "$LAST_HY2_MASQUERADE_CN" \
         "$LAST_REALITY_PORT" "$LAST_REALITY_UUID" "$TEMP_REALITY_PRIVATE_KEY" "$LAST_REALITY_SNI" \
         || return 1
-
+    
     create_systemd_service
     start_singbox_service || return 1
 
@@ -700,7 +700,7 @@ install_hysteria2_only() {
     info "生成的 Hysteria2 密码: ${LAST_HY2_PASSWORD}"
 
     generate_self_signed_cert "$LAST_HY2_MASQUERADE_CN" || return 1
-
+    
     LAST_REALITY_PORT=""
     LAST_REALITY_UUID=""
     LAST_REALITY_PUBLIC_KEY=""
@@ -730,7 +730,7 @@ install_reality_only() {
     LAST_REALITY_SNI=${temp_reality_sni:-$DEFAULT_REALITY_SNI}
 
     generate_reality_credentials || return 1
-
+    
     LAST_HY2_PORT=""
     LAST_HY2_PASSWORD=""
     LAST_HY2_MASQUERADE_CN=""
@@ -740,7 +740,7 @@ install_reality_only() {
         "" "" "" \
         "$LAST_REALITY_PORT" "$LAST_REALITY_UUID" "$TEMP_REALITY_PRIVATE_KEY" "$LAST_REALITY_SNI" \
         || return 1
-
+        
     create_systemd_service
     start_singbox_service || return 1
 
@@ -783,7 +783,7 @@ uninstall_singbox() {
     elif [ -f "$SINGBOX_INSTALL_PATH_EXPECTED" ]; then
         singbox_exe_to_remove="$SINGBOX_INSTALL_PATH_EXPECTED"
     fi
-
+    
     local official_install_path="/usr/local/bin/sing-box"
     if [ -f "$official_install_path" ]; then
         if [ -n "$singbox_exe_to_remove" ] && [ "$singbox_exe_to_remove" != "$official_install_path" ]; then
@@ -800,7 +800,7 @@ uninstall_singbox() {
     else
         warn "未找到明确的 sing-box 执行文件进行删除 (已检查 ${SINGBOX_INSTALL_PATH_EXPECTED} 和 ${official_install_path})。"
     fi
-
+    
     read -p "是否删除配置文件目录 ${SINGBOX_CONFIG_DIR} (包含导入信息缓存)? (y/N): " delete_config_dir_confirm
     if [[ "$delete_config_dir_confirm" =~ ^[Yy]$ ]]; then
         if [ -d "$SINGBOX_CONFIG_DIR" ]; then
@@ -810,7 +810,7 @@ uninstall_singbox() {
     else
         info "配置文件目录 (${SINGBOX_CONFIG_DIR}) 已保留。"
     fi
-
+    
     read -p "是否删除 Hysteria2 证书目录 ${HYSTERIA_CERT_DIR}? (y/N): " delete_cert_dir_confirm
      if [[ "$delete_cert_dir_confirm" =~ ^[Yy]$ ]]; then
         if [ -d "$HYSTERIA_CERT_DIR" ]; then
@@ -936,19 +936,270 @@ toolbox_menu() {
         clear
         echo -e "${MAGENTA}${BOLD}================ 工具箱 ================${NC}"
         echo "  1. 更新 Sing-box 内核 (使用官方beta脚本)"
+        echo "  2. 开发所有端口 (一键放行0-65535，风险自负)"
+        echo "  3. 本机信息"
+        echo "  4. DNS优化（国内/国外分流）"
+        echo "  5. BBR管理"
+        echo "  6. 组件管理"
+        echo "  7. 一键开启BBR3"
+        echo "  8. 系统时区调整"
+        echo "  9. 切换优先IPv4/IPv6"
+        echo " 10. 修改Root密码"
+        echo " 11. 开启Root密码登录"
+        echo " 12. 重启服务器"
         echo "  0. 返回主菜单"
         echo -e "${MAGENTA}${BOLD}========================================${NC}"
-        read -p "请输入选项 [0-1]: " tb_choice
+        read -p "请输入选项 [0-12]: " tb_choice
         case "$tb_choice" in
             1)
                 install_singbox_core && manage_singbox "restart"
+                read -n 1 -s -r -p "按任意键返回工具箱..."
+                ;;
+            2)
+                echo -e "${YELLOW}警告：此操作将放行所有端口（0-65535），有极大安全风险，仅建议在受信任环境下使用！${NC}"
+                read -p "确定要继续吗？(y/N): " confirm_open
+                if [[ "$confirm_open" =~ ^[Yy]$ ]]; then
+                    if command -v ufw &>/dev/null; then
+                        sudo ufw allow 0:65535/tcp
+                        sudo ufw allow 0:65535/udp
+                        sudo ufw reload
+                        echo "已通过 ufw 放行全部端口。"
+                    elif command -v firewall-cmd &>/dev/null; then
+                        sudo firewall-cmd --permanent --add-port=0-65535/tcp
+                        sudo firewall-cmd --permanent --add-port=0-65535/udp
+                        sudo firewall-cmd --reload
+                        echo "已通过 firewalld 放行全部端口。"
+                    else
+                        echo "未检测到常见防火墙（ufw/firewalld），请手动放行端口。"
+                    fi
+                else
+                    echo "操作已取消。"
+                fi
+                read -n 1 -s -r -p "按任意键返回工具箱..."
+                ;;
+            3)
+                echo -e "${CYAN}${BOLD}\n========= 本机信息 =========${NC}"
+                # 主机名、系统
+                echo -e "${YELLOW}主机名:${NC}      $(hostname)"
+                echo -e "${YELLOW}系统:${NC}        $(uname -o)"
+                echo -e "${YELLOW}Linux版本:${NC}   $(uname -r)"
+                echo -e "${YELLOW}发行版:${NC}      $(. /etc/os-release 2>/dev/null; echo $PRETTY_NAME)"
+                # CPU
+                echo -e "${YELLOW}CPU架构:${NC}     $(uname -m)"
+                echo -e "${YELLOW}CPU型号:${NC}     $(awk -F: '/model name/ {print $2; exit}' /proc/cpuinfo | xargs)"
+                echo -e "${YELLOW}CPU核心数:${NC}   $(nproc)"
+                echo -e "${YELLOW}CPU占用:${NC}     $(top -bn1 | awk '/Cpu/ {print $2"%"; exit}')"
+                # 内存
+                mem_total=$(free -h | awk '/Mem:/ {print $2}')
+                mem_used=$(free -h | awk '/Mem:/ {print $3}')
+                swap_total=$(free -h | awk '/Swap:/ {print $2}')
+                swap_used=$(free -h | awk '/Swap:/ {print $3}')
+                echo -e "${YELLOW}物理内存:${NC}    $mem_used / $mem_total"
+                echo -e "${YELLOW}虚拟内存:${NC}    $swap_used / $swap_total"
+                # 硬盘
+                disk_total=$(df -h --total | awk '/total/ {print $2}')
+                disk_used=$(df -h --total | awk '/total/ {print $3}')
+                echo -e "${YELLOW}硬盘占用:${NC}    $disk_used / $disk_total"
+                # 流量
+                rx=$(cat /proc/net/dev | awk '/:/ {sum+=$2} END {print sum/1024/1024 " MB"}')
+                tx=$(cat /proc/net/dev | awk '/:/ {sum+=$10} END {print sum/1024/1024 " MB"}')
+                echo -e "${YELLOW}总接收流量:${NC}  $rx"
+                echo -e "${YELLOW}总发送流量:${NC}  $tx"
+                # 拥堵算法
+                cc_alg=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null)
+                echo -e "${YELLOW}网络拥堵算法:${NC} $cc_alg"
+                # 公网IP
+                ipv4=$(curl -s --max-time 3 https://api.ipify.org)
+                ipv6=$(curl -s --max-time 3 https://api6.ipify.org)
+                echo -e "${YELLOW}公网IPv4:${NC}    $ipv4"
+                echo -e "${YELLOW}公网IPv6:${NC}    $ipv6"
+                # 运营商与地理位置
+                ipinfo=$(curl -s --max-time 5 ipinfo.io/json)
+                isp=$(echo "$ipinfo" | grep 'org' | awk -F: '{print $2}' | tr -d ' ",')
+                loc=$(echo "$ipinfo" | grep 'city' | awk -F: '{print $2}' | tr -d ' ",')
+                country=$(echo "$ipinfo" | grep 'country' | awk -F: '{print $2}' | tr -d ' ",')
+                echo -e "${YELLOW}运营商:${NC}      $isp"
+                echo -e "${YELLOW}地理位置:${NC}    $loc, $country"
+                # 系统时间与运行时长
+                echo -e "${YELLOW}系统时间:${NC}    $(date '+%Y-%m-%d %H:%M:%S')"
+                echo -e "${YELLOW}运行时长:${NC}    $(uptime -p)"
+                echo -e "${CYAN}${BOLD}==============================${NC}\n"
+                read -n 1 -s -r -p "按任意键返回工具箱..."
+                ;;
+            4)
+                # DNS优化
+                echo -e "${CYAN}请选择DNS优化方案："
+                echo "  1. 国外DNS (1.1.1.1, 8.8.8.8)"
+                echo "  2. 国内DNS (223.5.5.5, 180.76.76.76, 114.114.114.114)"
+                echo "  0. 取消"
+                read -p "请输入选项 [0-2]: " dns_opt
+                case "$dns_opt" in
+                    1)
+                        echo -e "nameserver 1.1.1.1\nnameserver 8.8.8.8" | sudo tee /etc/resolv.conf
+                        echo "已切换为国外DNS。"
+                        ;;
+                    2)
+                        echo -e "nameserver 223.5.5.5\nnameserver 180.76.76.76\nnameserver 114.114.114.114" | sudo tee /etc/resolv.conf
+                        echo "已切换为国内DNS。"
+                        ;;
+                    *)
+                        echo "操作已取消。"
+                        ;;
+                esac
+                read -n 1 -s -r -p "按任意键返回工具箱..."
+                ;;
+            5)
+                # BBR管理
+                echo -e "${CYAN}BBR管理："
+                bbr_status=$(sysctl net.ipv4.tcp_congestion_control 2>/dev/null | grep -q bbr && echo 已开启 || echo 未开启)
+                echo -e "当前BBR状态：${GREEN}$bbr_status${NC}"
+                echo "  1. 开启BBR"
+                echo "  2. 关闭BBR"
+                echo "  0. 返回"
+                read -p "请输入选项 [0-2]: " bbr_opt
+                case "$bbr_opt" in
+                    1)
+                        sudo modprobe tcp_bbr
+                        echo 'net.core.default_qdisc=fq' | sudo tee -a /etc/sysctl.conf
+                        echo 'net.ipv4.tcp_congestion_control=bbr' | sudo tee -a /etc/sysctl.conf
+                        sudo sysctl -p
+                        echo "BBR已开启。"
+                        ;;
+                    2)
+                        sudo sed -i '/net.core.default_qdisc/d' /etc/sysctl.conf
+                        sudo sed -i '/net.ipv4.tcp_congestion_control/d' /etc/sysctl.conf
+                        sudo sysctl -p
+                        echo "BBR已关闭。"
+                        ;;
+                    *)
+                        echo "操作已取消。"
+                        ;;
+                esac
+                read -n 1 -s -r -p "按任意键返回工具箱..."
+                ;;
+            6)
+                # 组件管理
+                while true; do
+                    clear
+                    echo -e "${CYAN}组件管理："
+                    echo "  1. 安装curl"
+                    echo "  2. 安装wget"
+                    echo "  3. 安装sudo"
+                    echo "  4. 安装unzip"
+                    echo "  0. 返回"
+                    read -p "请输入选项 [0-4]: " comp_opt
+                    case "$comp_opt" in
+                        1)
+                            if command -v curl &>/dev/null; then echo "curl已安装。"; else sudo apt-get install -y curl || sudo yum install -y curl; fi
+                            ;;
+                        2)
+                            if command -v wget &>/dev/null; then echo "wget已安装。"; else sudo apt-get install -y wget || sudo yum install -y wget; fi
+                            ;;
+                        3)
+                            if command -v sudo &>/dev/null; then echo "sudo已安装。"; else apt-get install -y sudo || yum install -y sudo; fi
+                            ;;
+                        4)
+                            if command -v unzip &>/dev/null; then echo "unzip已安装。"; else sudo apt-get install -y unzip || sudo yum install -y unzip; fi
+                            ;;
+                        0)
+                            break
+                            ;;
+                        *)
+                            echo "无效选项。"; sleep 1
+                            ;;
+                    esac
+                    read -n 1 -s -r -p "按任意键返回组件管理..."
+                done
+                ;;
+            7)
+                # 一键开启BBR3
+                echo -e "${CYAN}一键开启BBR3："
+                if uname -r | grep -qE '5\.|6\.'; then
+                    sudo modprobe tcp_bbr
+                    echo 'net.core.default_qdisc=fq' | sudo tee -a /etc/sysctl.conf
+                    echo 'net.ipv4.tcp_congestion_control=bbr' | sudo tee -a /etc/sysctl.conf
+                    sudo sysctl -p
+                    echo "BBR3已尝试开启（如内核支持）。"
+                else
+                    echo "当前内核版本不支持BBR3。"
+                fi
+                read -n 1 -s -r -p "按任意键返回工具箱..."
+                ;;
+            8)
+                # 系统时区调整
+                echo -e "${CYAN}请选择时区："
+                echo "  1. Asia/Shanghai (中国)"
+                echo "  2. UTC (世界标准)"
+                echo "  0. 取消"
+                read -p "请输入选项 [0-2]: " tz_opt
+                case "$tz_opt" in
+                    1)
+                        sudo timedatectl set-timezone Asia/Shanghai
+                        echo "已切换为Asia/Shanghai。"
+                        ;;
+                    2)
+                        sudo timedatectl set-timezone UTC
+                        echo "已切换为UTC。"
+                        ;;
+                    *)
+                        echo "操作已取消。"
+                        ;;
+                esac
+                read -n 1 -s -r -p "按任意键返回工具箱..."
+                ;;
+            9)
+                # 切换优先IPv4/IPv6
+                echo -e "${CYAN}请选择优先协议："
+                echo "  1. 优先IPv4"
+                echo "  2. 优先IPv6"
+                echo "  0. 取消"
+                read -p "请输入选项 [0-2]: " ipver_opt
+                case "$ipver_opt" in
+                    1)
+                        sudo sed -i '/^precedence ::ffff:0:0\/96  100$/d' /etc/gai.conf
+                        echo 'precedence ::ffff:0:0/96  100' | sudo tee -a /etc/gai.conf
+                        echo "已设置为优先IPv4。"
+                        ;;
+                    2)
+                        sudo sed -i '/^precedence ::ffff:0:0\/96  100$/d' /etc/gai.conf
+                        echo "已设置为优先IPv6。"
+                        ;;
+                    *)
+                        echo "操作已取消。"
+                        ;;
+                esac
+                read -n 1 -s -r -p "按任意键返回工具箱..."
+                ;;
+            10)
+                # 修改Root密码
+                echo -e "${CYAN}请输入新Root密码："
+                sudo passwd root
+                read -n 1 -s -r -p "按任意键返回工具箱..."
+                ;;
+            11)
+                # 开启Root密码登录
+                sudo sed -i 's/^#*PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
+                sudo sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+                sudo systemctl restart sshd || sudo systemctl restart ssh
+                echo "已开启Root密码登录（请确保已设置Root密码）。"
+                read -n 1 -s -r -p "按任意键返回工具箱..."
+                ;;
+            12)
+                # 重启服务器
+                echo -e "${YELLOW}警告：即将重启服务器，是否继续？${NC}"
+                read -p "输入y确认重启，其他键取消: " reboot_confirm
+                if [[ "$reboot_confirm" =~ ^[Yy]$ ]]; then
+                    sudo reboot
+                else
+                    echo "操作已取消。"
+                fi
                 read -n 1 -s -r -p "按任意键返回工具箱..."
                 ;;
             0)
                 break
                 ;;
             *)
-                echo "无效选项，请输入 0 或 1。"
+                echo "无效选项，请输入 0-12。"
                 sleep 1
                 ;;
         esac
