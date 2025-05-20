@@ -88,6 +88,12 @@ BOLD='\033[1m'
 UNDERLINE='\033[4m'
 NC='\033[0m' # 无颜色
 
+# --- 通用暂停函数 ---
+pause_return_menu() {
+    echo
+    read -p "输入0返回首页，或按任意键继续..." back_choice
+}
+
 # --- 辅助函数 ---
 info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
@@ -599,6 +605,17 @@ start_singbox_service() {
     fi
 }
 
+# 判断IP是否为IPv6
+format_ip() {
+  local ip="$1"
+  if [[ "$ip" == *:* ]]; then
+    echo "[$ip]"
+  else
+    echo "$ip"
+  fi
+}
+
+# 节点导出（修正版）
 display_and_store_config_info() {
     local mode="$1"
     LAST_INSTALL_MODE="$mode"
@@ -609,15 +626,9 @@ display_and_store_config_info() {
     fi
 
     echo -e "${MAGENTA}${BOLD}================= 节点信息 =================${NC}"
+    ip_formatted=$(format_ip "$LAST_SERVER_IP")
     if [ "$mode" == "all" ] || [ "$mode" == "hysteria2" ]; then
-        # IPv6加中括号
-        if [[ "$LAST_SERVER_IP" == *:* ]]; then
-            HY2_HOST="[$LAST_SERVER_IP]"
-        else
-            HY2_HOST="$LAST_SERVER_IP"
-        fi
-        HY2_PASSWORD_B64=$(echo -n "${LAST_HY2_PASSWORD}" | base64 | tr '+/' '-_' | tr -d '=')
-        LAST_HY2_LINK="hy2://${HY2_PASSWORD_B64}@${HY2_HOST}:${LAST_HY2_PORT}?peer=${HY2_HOST}&sni=${LAST_HY2_MASQUERADE_CN}&alpn=h3&insecure=1#Hy2-${LAST_SERVER_IP}"
+        LAST_HY2_LINK="hy2://${LAST_HY2_PASSWORD}@${ip_formatted}:${LAST_HY2_PORT}?sni=${LAST_HY2_MASQUERADE_CN}&alpn=h3&insecure=1#Hy2-${LAST_SERVER_IP}-$(date +%s)"
         echo -e "${GREEN}${BOLD} Hysteria2 配置信息:${NC}"
         echo -e "服务器地址: ${GREEN}${LAST_SERVER_IP}${NC}"
         echo -e "端口: ${GREEN}${LAST_HY2_PORT}${NC}"
@@ -633,12 +644,7 @@ display_and_store_config_info() {
         echo -e "${MAGENTA}${BOLD}--------------------------------------------${NC}"
     fi
     if [ "$mode" == "all" ] || [ "$mode" == "reality" ]; then
-        if [[ "$LAST_SERVER_IP" == *:* ]]; then
-            VLESS_HOST="[$LAST_SERVER_IP]"
-        else
-            VLESS_HOST="$LAST_SERVER_IP"
-        fi
-        LAST_VLESS_LINK="vless://${LAST_REALITY_UUID}@${VLESS_HOST}:${LAST_REALITY_PORT}?type=tcp&security=reality&sni=${LAST_REALITY_SNI}&fp=${LAST_REALITY_FINGERPRINT}&pbk=${LAST_REALITY_PUBLIC_KEY}&sid=${LAST_REALITY_SHORT_ID}&flow=xtls-rprx-vision#Reality-${LAST_SERVER_IP}"
+        LAST_VLESS_LINK="vless://${LAST_REALITY_UUID}@${ip_formatted}:${LAST_REALITY_PORT}?encryption=none&security=reality&sni=${LAST_REALITY_SNI}&fp=chrome&pbk=${LAST_REALITY_PUBLIC_KEY}&sid=${LAST_REALITY_SHORT_ID}#Reality-${LAST_SERVER_IP}-$(date +%s)"
         echo -e "${GREEN}${BOLD} Reality (VLESS) 配置信息:${NC}"
         echo -e "服务器地址: ${GREEN}${LAST_SERVER_IP}${NC}"
         echo -e "端口: ${GREEN}${LAST_REALITY_PORT}${NC}"
@@ -658,7 +664,6 @@ display_and_store_config_info() {
         echo -e "${MAGENTA}${BOLD}--------------------------------------------${NC}"
     fi
     save_persistent_info
-    pause_return_menu
 }
 
 
@@ -922,26 +927,34 @@ manage_singbox() {
 }
 
 update_script_online() {
-    local update_url="https://github.com/shangguancaiyun/One-Click-Proxy-Installer/raw/main/lvhy.sh"
+    local update_url="https://github.com/shangguan3366/One-Click-Proxy-Installer/raw/main/lvhy.sh"
     local tmpfile="/tmp/lvhy_update_$$.sh"
     echo "正在从远程仓库下载最新版脚本..."
     if curl -fsSL "$update_url" -o "$tmpfile"; then
         chmod +x "$tmpfile"
+        # 覆盖当前脚本
         if [ -f "$0" ] && [ -w "$0" ]; then
             cp "$tmpfile" "$0"
             echo "已更新当前脚本：$0"
         fi
+        # 覆盖快捷指令副本
         if [ -n "$QUICK_CMD_NAME" ] && [ -f "/usr/local/bin/$QUICK_CMD_NAME" ]; then
             sudo cp "$tmpfile" "/usr/local/bin/$QUICK_CMD_NAME"
             sudo chmod +x "/usr/local/bin/$QUICK_CMD_NAME"
             echo "已更新快捷指令副本：/usr/local/bin/$QUICK_CMD_NAME"
         fi
         rm -f "$tmpfile"
-        echo "脚本已更新为最新版。"
-        pause_return_menu
+        echo "脚本已更新为最新版，正在重新加载..."
+        update_run_stats
+        if [ -f "$STATS_FILE" ]; then
+            source "$STATS_FILE"
+        fi
+        sleep 1
+        exec "$0"
     else
         echo "下载失败，请检查网络或稍后重试。"
-        pause_return_menu
+        read -n 1 -s -r -p "按任意键返回主菜单..."
+        echo
     fi
 }
 
