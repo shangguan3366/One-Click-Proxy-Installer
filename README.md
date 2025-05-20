@@ -3,7 +3,7 @@
 ## 🌟 简介
 
 > 真正适合小白自己折腾的脚本！
-> 快捷启动命令：`k`
+> 快捷启动命令：`box`
 
 本脚本用于在 Linux 服务器上快速安装、配置和管理 [Sing-Box](https://github.com/SagerNet/sing-box)，特别针对 Hysteria2 和 VLESS Reality 协议优化。
 
@@ -22,7 +22,7 @@ apt-get update && apt-get install -y curl
 curl -fsSL "https://github.com/shangguancaiyun/One-Click-Proxy-Installer/raw/main/lvhy.sh" -o lvhy.sh ; chmod +x lvhy.sh
 ```
 
-**2. 再次运行脚本，或用快捷命令 `k`：**
+**2. 再次运行脚本，或用快捷命令 `box`：**
 
 ```bash
 sudo bash lvhy.sh
