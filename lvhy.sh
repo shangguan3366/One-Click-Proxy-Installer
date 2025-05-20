@@ -334,13 +334,19 @@ add_node() {
 # Reality/VLESS 节点添加
 add_node_reality() {
   echo -e "${YELLOW}请输入 Reality/VLESS 节点信息：${NC}"
-  read -rp "节点名称: " name
-  read -rp "端口: " port
-  read -rp "UUID: " uuid
-  read -rp "SNI(如 www.microsoft.com): " sni
-  read -rp "公钥: " pubkey
-  read -rp "Short ID: " shortid
-  read -rp "SpiderX(可选): " spiderx
+  read -rp "节点名称 [默认: Reality节点]: " name
+  [ -z "$name" ] && name="Reality节点"
+  read -rp "端口 [默认: 443]: " port
+  [ -z "$port" ] && port="443"
+  read -rp "UUID [默认: 自动生成]: " uuid
+  [ -z "$uuid" ] && uuid=$(cat /proc/sys/kernel/random/uuid)
+  read -rp "SNI(如 www.microsoft.com) [默认: www.microsoft.com]: " sni
+  [ -z "$sni" ] && sni="www.microsoft.com"
+  read -rp "公钥 [默认: 手动填写]: " pubkey
+  [ -z "$pubkey" ] && pubkey=""
+  read -rp "Short ID [默认: 0123456789abcdef]: " shortid
+  [ -z "$shortid" ] && shortid="0123456789abcdef"
+  read -rp "SpiderX(可选) [默认: 空]: " spiderx
   # 组装节点对象
   node=$(jq -n --arg name "$name" --arg proto "reality" --arg port "$port" --arg uuid "$uuid" --arg sni "$sni" --arg pubkey "$pubkey" --arg shortid "$shortid" --arg spiderx "$spiderx" '{name:$name,proto:$proto,port:$port,uuid:$uuid,sni:$sni,pubkey:$pubkey,shortid:$shortid,spiderx:$spiderx}')
   nodes=$(read_nodes)
@@ -354,11 +360,16 @@ add_node_reality() {
 # Hysteria2 节点添加
 add_node_hysteria2() {
   echo -e "${YELLOW}请输入 Hysteria2 节点信息：${NC}"
-  read -rp "节点名称: " name
-  read -rp "端口: " port
-  read -rp "密码: " password
-  read -rp "SNI(如 www.microsoft.com): " sni
+  read -rp "节点名称 [默认: Hysteria2节点]: " name
+  [ -z "$name" ] && name="Hysteria2节点"
+  read -rp "端口 [默认: 8443]: " port
+  [ -z "$port" ] && port="8443"
+  read -rp "密码 [默认: 自动生成]: " password
+  [ -z "$password" ] && password=$(openssl rand -base64 12 | tr -dc 'A-Za-z0-9' | head -c 16)
+  read -rp "SNI(如 www.microsoft.com) [默认: www.microsoft.com]: " sni
+  [ -z "$sni" ] && sni="www.microsoft.com"
   read -rp "ALPN(可选，默认h3): " alpn
+  [ -z "$alpn" ] && alpn="h3"
   # 组装节点对象
   node=$(jq -n --arg name "$name" --arg proto "hysteria2" --arg port "$port" --arg password "$password" --arg sni "$sni" --arg alpn "$alpn" '{name:$name,proto:$proto,port:$port,password:$password,sni:$sni,alpn:$alpn}')
   nodes=$(read_nodes)
