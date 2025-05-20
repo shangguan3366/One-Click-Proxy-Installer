@@ -127,7 +127,6 @@ sudo bash lvhy.sh
 ```bash <(curl -sL kejilion.sh)
 
 
----
 
 
 >
@@ -179,7 +178,6 @@ akile的dns解锁流媒体vps [akile](https://akile.io/register?aff_code=9953229
 
 
 
----
 
 
 ## 快速开始
