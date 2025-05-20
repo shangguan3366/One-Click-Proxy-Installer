@@ -32,7 +32,7 @@ EOF
 
 # --- Author Information ---
 AUTHOR_NAME="Zhong Yuan"
-QUICK_CMD_NAME="k"
+QUICK_CMD_NAME="box"
 
 # --- 统计信息初始化 ---
 update_run_stats
@@ -1291,11 +1291,7 @@ done
 
 # --- 脚本末尾自动化一键设置快捷命令功能 ---
 if [ "$(basename $0)" != "$QUICK_CMD_NAME" ] && [ ! -f "/usr/local/bin/$QUICK_CMD_NAME" ]; then
-    echo "\n检测到你还没有设置快捷命令，是否添加？"
-    read -p "输入 y 添加快捷命令 $QUICK_CMD_NAME，输入 n 跳过 [y/n]: " quick_choice
-    if [[ "$quick_choice" =~ ^[Yy]$ ]]; then
-        sudo cp "$0" "/usr/local/bin/$QUICK_CMD_NAME"
-        sudo chmod +x "/usr/local/bin/$QUICK_CMD_NAME"
-        echo "\n现在你可以直接输入 $QUICK_CMD_NAME 快速管理 Sing-Box 节点了！"
-    fi
+    sudo cp "$0" "/usr/local/bin/$QUICK_CMD_NAME"
+    sudo chmod +x "/usr/local/bin/$QUICK_CMD_NAME"
+    echo "\n已自动设置快捷命令：box。你可以在任意目录输入 box 快速管理 Sing-Box 节点！"
 fi
