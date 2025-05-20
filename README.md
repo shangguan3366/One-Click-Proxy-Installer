@@ -11,7 +11,7 @@
 
 ## ✨ 使用方法
 
-**更新系统：**
+**更新系统(可选)：**
 
 ```bash
 apt-get update && apt-get install -y curl
