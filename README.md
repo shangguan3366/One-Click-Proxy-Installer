@@ -19,7 +19,7 @@ apt-get update && apt-get install -y curl
 **1. 下载并运行脚本：**
 
 ```bash
-curl -fsSL "https://github.com/shangguancaiyun/One-Click-Proxy-Installer/raw/main/lvhy.sh" -o lvhy.sh chmod +x lvhy.sh
+curl -fsSL "https://github.com/shangguancaiyun/One-Click-Proxy-Installer/raw/main/lvhy.sh" -o lvhy.sh ; chmod +x lvhy.sh
 ```
 
 **2. 再次运行脚本，或用快捷命令 `k`：**
