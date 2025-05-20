@@ -664,6 +664,9 @@ display_and_store_config_info() {
         echo -e "${MAGENTA}${BOLD}--------------------------------------------${NC}"
     fi
     save_persistent_info
+    echo
+    read -n 1 -s -r -p "按任意键返回主菜单..."
+    echo
 }
 
 
