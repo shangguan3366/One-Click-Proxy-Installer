@@ -785,7 +785,20 @@ install_tools() {
 
 # 更新脚本
 update_script() {
-  echo "[待实现] 检查更新本脚本"; pause_return_menu script_menu;
+  clear
+  echo -e "${BLUE}正在检查并更新本脚本...${NC}"
+  # 远程脚本地址（请根据你的实际仓库修改）
+  REMOTE_URL="https://github.com/shangguan3366/One-Click-Proxy-Installer/raw/main/box.sh"
+  TMP_FILE="/tmp/box_update_$$.sh"
+  if curl -fsSL "$REMOTE_URL" -o "$TMP_FILE"; then
+    chmod +x "$TMP_FILE"
+    cp "$TMP_FILE" "$0"
+    rm -f "$TMP_FILE"
+    echo -e "${GREEN}脚本已成功更新为最新版！请重新运行本脚本。${NC}"
+  else
+    echo -e "${RED}下载更新失败，请检查网络或稍后重试。${NC}"
+  fi
+  pause_return_menu script_menu
 }
 
 # 关于/帮助
