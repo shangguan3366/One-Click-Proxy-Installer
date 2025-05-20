@@ -605,6 +605,17 @@ start_singbox_service() {
     fi
 }
 
+# 判断IP是否为IPv6
+format_ip() {
+  local ip="$1"
+  if [[ "$ip" == *:* ]]; then
+    echo "[$ip]"
+  else
+    echo "$ip"
+  fi
+}
+
+# 节点导出（修正版）
 display_and_store_config_info() {
     local mode="$1"
     LAST_INSTALL_MODE="$mode"
@@ -614,9 +625,10 @@ display_and_store_config_info() {
         qrencode_is_ready=true
     fi
 
-    echo -e "----------------------------------------------------"
+    echo -e "${MAGENTA}${BOLD}================= 节点信息 =================${NC}"
+    ip_formatted=$(format_ip "$LAST_SERVER_IP")
     if [ "$mode" == "all" ] || [ "$mode" == "hysteria2" ]; then
-        LAST_HY2_LINK="hy2://${LAST_HY2_PASSWORD}@${LAST_SERVER_IP}:${LAST_HY2_PORT}?sni=${LAST_HY2_MASQUERADE_CN}&alpn=h3&insecure=1#Hy2-${LAST_SERVER_IP}-$(date +%s)"
+        LAST_HY2_LINK="hy2://${LAST_HY2_PASSWORD}@${ip_formatted}:${LAST_HY2_PORT}?sni=${LAST_HY2_MASQUERADE_CN}&alpn=h3&insecure=1#Hy2-${LAST_SERVER_IP}-$(date +%s)"
         echo -e "${GREEN}${BOLD} Hysteria2 配置信息:${NC}"
         echo -e "服务器地址: ${GREEN}${LAST_SERVER_IP}${NC}"
         echo -e "端口: ${GREEN}${LAST_HY2_PORT}${NC}"
@@ -625,16 +637,14 @@ display_and_store_config_info() {
         echo -e "ALPN: ${GREEN}h3${NC}"
         echo -e "允许不安全 (自签证书): ${GREEN}是/True${NC}"
         echo -e "${CYAN}Hysteria2 导入链接:${NC} ${GREEN}${LAST_HY2_LINK}${NC}"
-        
         if $qrencode_is_ready && command -v qrencode &>/dev/null; then
-            echo "Hysteria2 二维码:"
+            echo -e "${YELLOW}Hysteria2 二维码:${NC}"
             qrencode -t ANSIUTF8 "${LAST_HY2_LINK}"
         fi
-        echo -e "----------------------------------------------------"
+        echo -e "${MAGENTA}${BOLD}--------------------------------------------${NC}"
     fi
-
     if [ "$mode" == "all" ] || [ "$mode" == "reality" ]; then
-        LAST_VLESS_LINK="vless://${LAST_REALITY_UUID}@${LAST_SERVER_IP}:${LAST_REALITY_PORT}?security=reality&sni=${LAST_REALITY_SNI}&fp=${LAST_REALITY_FINGERPRINT}&pbk=${LAST_REALITY_PUBLIC_KEY}&sid=${LAST_REALITY_SHORT_ID}&flow=xtls-rprx-vision&type=tcp#Reality-${LAST_SERVER_IP}-$(date +%s)"
+        LAST_VLESS_LINK="vless://${LAST_REALITY_UUID}@${ip_formatted}:${LAST_REALITY_PORT}?encryption=none&security=reality&sni=${LAST_REALITY_SNI}&fp=chrome&pbk=${LAST_REALITY_PUBLIC_KEY}&sid=${LAST_REALITY_SHORT_ID}#Reality-${LAST_SERVER_IP}-$(date +%s)"
         echo -e "${GREEN}${BOLD} Reality (VLESS) 配置信息:${NC}"
         echo -e "服务器地址: ${GREEN}${LAST_SERVER_IP}${NC}"
         echo -e "端口: ${GREEN}${LAST_REALITY_PORT}${NC}"
@@ -647,14 +657,16 @@ display_and_store_config_info() {
         echo -e "ShortID: ${GREEN}${LAST_REALITY_SHORT_ID}${NC}"
         echo -e "Flow: ${GREEN}xtls-rprx-vision${NC}"
         echo -e "${CYAN}VLESS Reality 导入链接:${NC} ${GREEN}${LAST_VLESS_LINK}${NC}"
-
         if $qrencode_is_ready && command -v qrencode &>/dev/null; then
-            echo "Reality (VLESS) 二维码:"
+            echo -e "${YELLOW}Reality (VLESS) 二维码:${NC}"
             qrencode -t ANSIUTF8 "${LAST_VLESS_LINK}"
         fi
-        echo -e "----------------------------------------------------"
+        echo -e "${MAGENTA}${BOLD}--------------------------------------------${NC}"
     fi
     save_persistent_info
+    echo
+    read -n 1 -s -r -p "按任意键返回主菜单..."
+    echo
 }
 
 
@@ -918,35 +930,26 @@ manage_singbox() {
 }
 
 update_script_online() {
-    local update_url="https://github.com/shangguan3366/One-Click-Proxy-Installer/raw/main/lvhy.sh"
+    local update_url="https://github.com/shangguancaiyun/One-Click-Proxy-Installer/raw/main/lvhy.sh"
     local tmpfile="/tmp/lvhy_update_$$.sh"
     echo "正在从远程仓库下载最新版脚本..."
     if curl -fsSL "$update_url" -o "$tmpfile"; then
         chmod +x "$tmpfile"
-        # 覆盖当前脚本
         if [ -f "$0" ] && [ -w "$0" ]; then
             cp "$tmpfile" "$0"
-            echo "已更新当前脚本：$0"
-        fi
-        # 覆盖快捷指令副本
-        if [ -n "$QUICK_CMD_NAME" ] && [ -f "/usr/local/bin/$QUICK_CMD_NAME" ]; then
-            sudo cp "$tmpfile" "/usr/local/bin/$QUICK_CMD_NAME"
-            sudo chmod +x "/usr/local/bin/$QUICK_CMD_NAME"
-            echo "已更新快捷指令副本：/usr/local/bin/$QUICK_CMD_NAME"
+            echo -e "${GREEN}脚本已更新为最新版！${NC}"
+        else
+            echo -e "${YELLOW}当前脚本不是本地文件，或没有写权限，未自动覆盖。${NC}"
+            echo -e "${YELLOW}你可以手动用如下命令更新：${NC}"
+            echo -e "${CYAN}curl -fsSL \"$update_url\" -o lvhy.sh && chmod +x lvhy.sh${NC}"
         fi
         rm -f "$tmpfile"
-        echo "脚本已更新为最新版，正在重新加载..."
-        update_run_stats
-        if [ -f "$STATS_FILE" ]; then
-            source "$STATS_FILE"
-        fi
-        sleep 1
-        exec "$0"
     else
-        echo "下载失败，请检查网络或稍后重试。"
-        read -n 1 -s -r -p "按任意键返回主菜单..."
-        echo
+        echo -e "${RED}下载失败，请检查网络或稍后重试。${NC}"
     fi
+    echo
+    read -n 1 -s -r -p "按任意键返回主菜单..."
+    echo
 }
 
 toolbox_menu() {
@@ -1226,31 +1229,29 @@ toolbox_menu() {
 
 # --- Main Menu ---
 show_menu() {
-    clear 
+    clear
     print_author_info
-
-    echo -e "${GREEN}${BOLD}安装选项:${NC}"
+    echo -e "${MAGENTA}${BOLD}=================【安装相关】==================${NC}"
     echo "  1. 安装 Hysteria2 + Reality (共存)"
     echo "  2. 单独安装 Hysteria2"
     echo "  3. 单独安装 Reality (VLESS)"
-    echo "------------------------------------------------"
-    echo -e "${YELLOW}${BOLD}管理选项:${NC}"
+    echo -e "${MAGENTA}${BOLD}=================【管理相关】==================${NC}"
     echo "  4. 启动 Sing-box 服务"
     echo "  5. 停止 Sing-box 服务"
     echo "  6. 重启 Sing-box 服务"
     echo "  7. 查看 Sing-box 服务状态"
     echo "  8. 查看 Sing-box 实时日志"
     echo "  9. 查看当前配置文件"
-    echo "  10. 编辑当前配置文件 (nano/vim)"
-    echo "  11. 显示“节点”的导入信息 (含二维码)"
-    echo "------------------------------------------------"
-    echo -e "${RED}${BOLD}其他选项:${NC}"
-    echo "  12. 工具箱"
-    echo "  13. 卸载 Sing-box"
-    echo "  14. 更改快捷指令"
-    echo "  15. 在线更新脚本"
+    echo " 10. 编辑当前配置文件 (nano/vim)"
+    echo " 11. 显示"节点"的导入信息 (含二维码)"
+    echo -e "${MAGENTA}${BOLD}=================【工具箱】====================${NC}"
+    echo " 12. 工具箱"
+    echo -e "${MAGENTA}${BOLD}=================【其他】======================${NC}"
+    echo " 13. 卸载 Sing-box"
+    echo " 14. 更改快捷指令"
+    echo " 15. 在线更新脚本"
     echo "  0. 退出脚本"
-    echo "================================================"
+    echo -e "${MAGENTA}${BOLD}===============================================${NC}"
     read -p "请输入选项 [0-15]: " choice
 
     case "$choice" in
