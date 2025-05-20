@@ -930,35 +930,26 @@ manage_singbox() {
 }
 
 update_script_online() {
-    local update_url="https://github.com/shangguan3366/One-Click-Proxy-Installer/raw/main/lvhy.sh"
+    local update_url="https://github.com/shangguancaiyun/One-Click-Proxy-Installer/raw/main/lvhy.sh"
     local tmpfile="/tmp/lvhy_update_$$.sh"
     echo "正在从远程仓库下载最新版脚本..."
     if curl -fsSL "$update_url" -o "$tmpfile"; then
         chmod +x "$tmpfile"
-        # 覆盖当前脚本
         if [ -f "$0" ] && [ -w "$0" ]; then
             cp "$tmpfile" "$0"
-            echo "已更新当前脚本：$0"
-        fi
-        # 覆盖快捷指令副本
-        if [ -n "$QUICK_CMD_NAME" ] && [ -f "/usr/local/bin/$QUICK_CMD_NAME" ]; then
-            sudo cp "$tmpfile" "/usr/local/bin/$QUICK_CMD_NAME"
-            sudo chmod +x "/usr/local/bin/$QUICK_CMD_NAME"
-            echo "已更新快捷指令副本：/usr/local/bin/$QUICK_CMD_NAME"
+            echo -e "${GREEN}脚本已更新为最新版！${NC}"
+        else
+            echo -e "${YELLOW}当前脚本不是本地文件，或没有写权限，未自动覆盖。${NC}"
+            echo -e "${YELLOW}你可以手动用如下命令更新：${NC}"
+            echo -e "${CYAN}curl -fsSL \"$update_url\" -o lvhy.sh && chmod +x lvhy.sh${NC}"
         fi
         rm -f "$tmpfile"
-        echo "脚本已更新为最新版，正在重新加载..."
-        update_run_stats
-        if [ -f "$STATS_FILE" ]; then
-            source "$STATS_FILE"
-        fi
-        sleep 1
-        exec "$0"
     else
-        echo "下载失败，请检查网络或稍后重试。"
-        read -n 1 -s -r -p "按任意键返回主菜单..."
-        echo
+        echo -e "${RED}下载失败，请检查网络或稍后重试。${NC}"
     fi
+    echo
+    read -n 1 -s -r -p "按任意键返回主菜单..."
+    echo
 }
 
 toolbox_menu() {
