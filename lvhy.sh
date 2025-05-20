@@ -2,43 +2,11 @@
 
 # Script for Sing-Box Hysteria2 & Reality Management
 
-# --- 统计信息文件 ---
-STATS_FILE="$HOME/.oneclick_stats"
-
-# --- 统计函数 ---
-update_run_stats() {
-    local today total today_str
-    today_str=$(date +%Y-%m-%d)
-    if [ -f "$STATS_FILE" ]; then
-        source "$STATS_FILE"
-    else
-        RUN_TOTAL=0
-        RUN_TODAY=0
-        RUN_TODAY_DATE="$today_str"
-    fi
-    if [ "$RUN_TODAY_DATE" = "$today_str" ]; then
-        RUN_TODAY=$((RUN_TODAY+1))
-    else
-        RUN_TODAY=1
-        RUN_TODAY_DATE="$today_str"
-    fi
-    RUN_TOTAL=$((RUN_TOTAL+1))
-    cat > "$STATS_FILE" <<EOF
-RUN_TOTAL=$RUN_TOTAL
-RUN_TODAY=$RUN_TODAY
-RUN_TODAY_DATE="$RUN_TODAY_DATE"
-EOF
-}
-
 # --- Author Information ---
-AUTHOR_NAME="Zhong Yuan"
-QUICK_CMD_NAME="k"
-
-# --- 统计信息初始化 ---
-update_run_stats
-if [ -f "$STATS_FILE" ]; then
-    source "$STATS_FILE"
-fi
+AUTHOR_NAME=""#作者名字
+WEBSITE_URL="https://ybfl.net"#网站
+TG_CHANNEL_URL="https://t.me/"#TG频道
+TG_GROUP_URL="https://t.me/"#TG交流群
 
 # --- Configuration ---
 SINGBOX_INSTALL_PATH_EXPECTED="/usr/local/bin/sing-box"
@@ -88,12 +56,6 @@ BOLD='\033[1m'
 UNDERLINE='\033[4m'
 NC='\033[0m' # 无颜色
 
-# --- 通用暂停函数 ---
-pause_return_menu() {
-    echo
-    read -p "输入0返回首页，或按任意键继续..." back_choice
-}
-
 # --- 辅助函数 ---
 info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
@@ -102,39 +64,13 @@ success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 
 print_author_info() {
     echo -e "${MAGENTA}${BOLD}================================================${NC}"
-    echo -e "${BOLD}${YELLOW} 项目名称: One-Click-Proxy-Installer ${NC}"
-    echo -e "${MAGENTA}${BOLD}================================================${NC}"
     echo -e "${CYAN}${BOLD} Sing-Box Hysteria2 & Reality 管理脚本 ${NC}"
     echo -e "${MAGENTA}${BOLD}================================================${NC}"
     echo -e " ${YELLOW}作者:${NC}      ${GREEN}${AUTHOR_NAME}${NC}"
-    echo -e " ${YELLOW}快捷启动指令:${NC} ${GREEN}${QUICK_CMD_NAME}${NC} (全局输入即可快速启动本脚本)"
-    echo -e " ${YELLOW}今日运行次数:${NC} ${GREEN}${RUN_TODAY}${NC}   ${YELLOW}总运行次数:${NC} ${GREEN}${RUN_TOTAL}${NC}"
+    echo -e " ${YELLOW}网站:${NC}      ${UNDERLINE}${BLUE}${WEBSITE_URL}${NC}"
+    echo -e " ${YELLOW}TG 频道:${NC}   ${UNDERLINE}${BLUE}${TG_CHANNEL_URL}${NC}"
+    echo -e " ${YELLOW}TG 交流群:${NC} ${UNDERLINE}${BLUE}${TG_GROUP_URL}${NC}"
     echo -e "${MAGENTA}${BOLD}================================================${NC}"
-}
-
-change_quick_cmd() {
-    # 检查脚本是否为真实文件
-    if [ ! -f "$0" ]; then
-        echo "当前脚本不是本地文件，无法设置快捷指令。"
-        echo "请用 bash /root/lvhy.sh 方式运行本脚本后再设置快捷指令。"
-        read -n 1 -s -r -p "按任意键返回主菜单..."
-        echo
-        return
-    fi
-    read -p "请输入你想要设置的新快捷指令（如 sbox）:" new_cmd
-    if [[ -z "$new_cmd" ]]; then
-        echo "未输入，操作取消。"
-        return
-    fi
-    if [ "$new_cmd" = "lvhy.sh" ]; then
-        echo "不能与脚本本身同名。"
-        return
-    fi
-    sudo cp "$0" "/usr/local/bin/$new_cmd"
-    sudo chmod +x "/usr/local/bin/$new_cmd"
-    export QUICK_CMD_NAME="$new_cmd"
-    sed -i "s/^QUICK_CMD_NAME=.*/QUICK_CMD_NAME=\"$new_cmd\"/" "$0"
-    echo "快捷指令已设置为：$new_cmd。你可以在任意目录输入 $new_cmd 快速启动本脚本。"
 }
 
 load_persistent_info() {
@@ -266,27 +202,27 @@ find_and_set_singbox_cmd() {
 
 
 get_server_ip() {
-    local ips=()
-    ips+=($(curl -s --max-time 5 https://api64.ipify.org))
-    ips+=($(curl -s --max-time 5 https://api.ipify.org))
-    ips+=($(hostname -I | tr ' ' '\n' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$'))
-    ips+=($(hostname -I | tr ' ' '\n' | grep -E '^[0-9a-fA-F:]+$'))
-    local uniq_ips=($(echo "${ips[@]}" | tr ' ' '\n' | sort -u | grep -v '^$'))
-    if [ ${#uniq_ips[@]} -eq 0 ]; then
-        warn "未能自动检测到公网IP，请手动输入。"
-        read -p "请输入你的服务器公网IP: " SERVER_IP
-    elif [ ${#uniq_ips[@]} -eq 1 ]; then
-        SERVER_IP="${uniq_ips[0]}"
-        info "检测到服务器IP: $SERVER_IP"
-    else
-        echo "检测到多个IP地址："
-        for i in "${!uniq_ips[@]}"; do
-            echo "  $((i+1)). ${uniq_ips[$i]}"
-        done
-        read -p "请选择要使用的IP地址（输入序号）: " ip_choice
-        SERVER_IP="${uniq_ips[$((ip_choice-1))]}"
-        info "你选择的服务器IP: $SERVER_IP"
+    SERVER_IP=$(curl -s --max-time 5 ip.sb || curl -s --max-time 5 https://api.ipify.org || curl -s --max-time 5 https://checkip.amazonaws.com)
+    if [ -z "$SERVER_IP" ]; then
+        warn "无法自动获取服务器公网 IP。你可能需要手动配置客户端。"
+        read -p "请输入你的服务器公网 IP (留空则尝试从hostname获取): " MANUAL_SERVER_IP
+        if [ -n "$MANUAL_SERVER_IP" ]; then
+            SERVER_IP="$MANUAL_SERVER_IP"
+        else
+            SERVER_IP=$(hostname -I | awk '{print $1}')
+            if [ -z "$SERVER_IP" ]; then
+                warn "无法从hostname获取IP，请确保网络连接正常或手动输入。"
+            fi
+        fi
     fi
+    if [[ "$SERVER_IP" =~ ^10\. || "$SERVER_IP" =~ ^172\.(1[6-9]|2[0-9]|3[0-1])\. || "$SERVER_IP" =~ ^192\.168\. ]]; then
+        warn "检测到的 IP (${SERVER_IP}) 似乎是私有IP。如果这是公网服务器，请手动输入正确的公网IP。"
+        read -p "请再次输入你的服务器公网 IP (如果上面的IP不正确): " OVERRIDE_SERVER_IP
+        if [ -n "$OVERRIDE_SERVER_IP" ]; then
+            SERVER_IP="$OVERRIDE_SERVER_IP"
+        fi
+    fi
+    info "检测到服务器 IP: ${SERVER_IP}"
     LAST_SERVER_IP="$SERVER_IP"
 }
 
@@ -370,7 +306,7 @@ generate_reality_credentials() {
         fi
     fi
     info "使用命令 '$SINGBOX_CMD' 生成 Reality UUID 和 Keypair..."
-    
+
     info "执行: $SINGBOX_CMD generate uuid"
     REALITY_UUID_VAL=$($SINGBOX_CMD generate uuid)
     CMD_EXIT_CODE=$?
@@ -392,10 +328,10 @@ generate_reality_credentials() {
     fi
     info "原始 Keypair 输出:"
     echo "$KEY_PAIR_OUTPUT"
-    
+
     REALITY_PRIVATE_KEY_VAL=$(echo "$KEY_PAIR_OUTPUT" | awk -F': ' '/PrivateKey:/ {print $2}')
     REALITY_PUBLIC_KEY_VAL=$(echo "$KEY_PAIR_OUTPUT" | awk -F': ' '/PublicKey:/ {print $2}')
-    
+
     REALITY_PRIVATE_KEY_VAL=$(echo "${REALITY_PRIVATE_KEY_VAL}" | xargs)
     REALITY_PUBLIC_KEY_VAL=$(echo "${REALITY_PUBLIC_KEY_VAL}" | xargs)
 
@@ -505,12 +441,14 @@ EOF
     },
     "dns": {
         "servers": [
-            { "tag": "google", "address": "8.8.8.8" },
-            { "tag": "cloudflare", "address": "1.1.1.1" },
-            { "tag": "aliyun", "address": "223.5.5.5" },
-            { "tag": "tencent", "address": "119.29.29.29" }
+            { "address": "8.8.8.8" },
+            { "address": "1.1.1.1" },
+            { "address": "223.5.5.5" },
+            { "address": "119.29.29.29" }
         ],
-        "strategy": "ipv4_only"
+        "strategy": "ipv4_only",
+        "disable_cache": false,
+        "independent_cache": false
     },
     "inbounds": [
         ${final_inbounds_json}
@@ -519,9 +457,23 @@ EOF
         {
             "type": "direct",
             "tag": "direct"
+        },
+        {
+            "type": "block",
+            "tag": "block"
+        },
+        {
+            "type": "dns",
+            "tag": "dns-out"
         }
     ],
     "route": {
+        "rules": [
+            {
+                "protocol": "dns",
+                "outbound": "dns-out"
+            }
+        ],
         "final": "direct"
     }
 }
@@ -539,22 +491,6 @@ EOF
     else
         error "配置文件语法错误。请检查 ${SINGBOX_CONFIG_FILE}"
         cat "${SINGBOX_CONFIG_FILE}"
-        echo "----------------------------------------"
-        echo "常见原因："
-        echo "1. 配置格式不兼容当前 sing-box 版本。"
-        echo "2. 路由规则或 DNS 配置有误。"
-        echo "3. 请参考 https://sing-box.sagernet.org/ 文档修正。"
-        echo "你可以选择："
-        echo "  [1] 重新生成配置文件"
-        echo "  [2] 手动编辑配置文件"
-        echo "  [3] 退出"
-        read -p "请输入选项 [1-3]: " fix_choice
-        case "$fix_choice" in
-            1) return 1 ;;
-            2) nano "$SINGBOX_CONFIG_FILE"; return 1 ;;
-            3) exit 1 ;;
-            *) echo "无效选项，退出。"; exit 1 ;;
-        esac
         return 1
     fi
 }
@@ -614,7 +550,7 @@ display_and_store_config_info() {
         qrencode_is_ready=true
     fi
 
-    echo -e "${MAGENTA}${BOLD}================= 节点信息 =================${NC}"
+    echo -e "----------------------------------------------------"
     if [ "$mode" == "all" ] || [ "$mode" == "hysteria2" ]; then
         LAST_HY2_LINK="hy2://${LAST_HY2_PASSWORD}@${LAST_SERVER_IP}:${LAST_HY2_PORT}?sni=${LAST_HY2_MASQUERADE_CN}&alpn=h3&insecure=1#Hy2-${LAST_SERVER_IP}-$(date +%s)"
         echo -e "${GREEN}${BOLD} Hysteria2 配置信息:${NC}"
@@ -625,12 +561,14 @@ display_and_store_config_info() {
         echo -e "ALPN: ${GREEN}h3${NC}"
         echo -e "允许不安全 (自签证书): ${GREEN}是/True${NC}"
         echo -e "${CYAN}Hysteria2 导入链接:${NC} ${GREEN}${LAST_HY2_LINK}${NC}"
+
         if $qrencode_is_ready && command -v qrencode &>/dev/null; then
-            echo -e "${YELLOW}Hysteria2 二维码:${NC}"
+            echo "Hysteria2 二维码:"
             qrencode -t ANSIUTF8 "${LAST_HY2_LINK}"
         fi
-        echo -e "${MAGENTA}${BOLD}--------------------------------------------${NC}"
+        echo -e "----------------------------------------------------"
     fi
+
     if [ "$mode" == "all" ] || [ "$mode" == "reality" ]; then
         LAST_VLESS_LINK="vless://${LAST_REALITY_UUID}@${LAST_SERVER_IP}:${LAST_REALITY_PORT}?security=reality&sni=${LAST_REALITY_SNI}&fp=${LAST_REALITY_FINGERPRINT}&pbk=${LAST_REALITY_PUBLIC_KEY}&sid=${LAST_REALITY_SHORT_ID}&flow=xtls-rprx-vision&type=tcp#Reality-${LAST_SERVER_IP}-$(date +%s)"
         echo -e "${GREEN}${BOLD} Reality (VLESS) 配置信息:${NC}"
@@ -645,11 +583,12 @@ display_and_store_config_info() {
         echo -e "ShortID: ${GREEN}${LAST_REALITY_SHORT_ID}${NC}"
         echo -e "Flow: ${GREEN}xtls-rprx-vision${NC}"
         echo -e "${CYAN}VLESS Reality 导入链接:${NC} ${GREEN}${LAST_VLESS_LINK}${NC}"
+
         if $qrencode_is_ready && command -v qrencode &>/dev/null; then
-            echo -e "${YELLOW}Reality (VLESS) 二维码:${NC}"
+            echo "Reality (VLESS) 二维码:"
             qrencode -t ANSIUTF8 "${LAST_VLESS_LINK}"
         fi
-        echo -e "${MAGENTA}${BOLD}--------------------------------------------${NC}"
+        echo -e "----------------------------------------------------"
     fi
     save_persistent_info
 }
@@ -681,7 +620,7 @@ install_hysteria2_reality() {
         "$LAST_HY2_PORT" "$LAST_HY2_PASSWORD" "$LAST_HY2_MASQUERADE_CN" \
         "$LAST_REALITY_PORT" "$LAST_REALITY_UUID" "$TEMP_REALITY_PRIVATE_KEY" "$LAST_REALITY_SNI" \
         || return 1
-    
+
     create_systemd_service
     start_singbox_service || return 1
 
@@ -703,7 +642,7 @@ install_hysteria2_only() {
     info "生成的 Hysteria2 密码: ${LAST_HY2_PASSWORD}"
 
     generate_self_signed_cert "$LAST_HY2_MASQUERADE_CN" || return 1
-    
+
     LAST_REALITY_PORT=""
     LAST_REALITY_UUID=""
     LAST_REALITY_PUBLIC_KEY=""
@@ -733,7 +672,7 @@ install_reality_only() {
     LAST_REALITY_SNI=${temp_reality_sni:-$DEFAULT_REALITY_SNI}
 
     generate_reality_credentials || return 1
-    
+
     LAST_HY2_PORT=""
     LAST_HY2_PASSWORD=""
     LAST_HY2_MASQUERADE_CN=""
@@ -743,7 +682,7 @@ install_reality_only() {
         "" "" "" \
         "$LAST_REALITY_PORT" "$LAST_REALITY_UUID" "$TEMP_REALITY_PRIVATE_KEY" "$LAST_REALITY_SNI" \
         || return 1
-        
+
     create_systemd_service
     start_singbox_service || return 1
 
@@ -755,12 +694,10 @@ show_current_import_info() {
     if [ -z "$LAST_INSTALL_MODE" ]; then
         warn "尚未通过此脚本安装任何配置，或上次安装信息未保留。"
         info "请先执行安装操作 (选项 1, 2, 或 3)，或者确保 ${PERSISTENT_INFO_FILE} 文件存在且包含信息。"
-        pause_return_menu
         return
     fi
     info "显示上次保存的配置信息 (${LAST_INSTALL_MODE}模式):"
     display_and_store_config_info "$LAST_INSTALL_MODE"
-    pause_return_menu
 }
 
 uninstall_singbox() {
@@ -788,7 +725,7 @@ uninstall_singbox() {
     elif [ -f "$SINGBOX_INSTALL_PATH_EXPECTED" ]; then
         singbox_exe_to_remove="$SINGBOX_INSTALL_PATH_EXPECTED"
     fi
-    
+
     local official_install_path="/usr/local/bin/sing-box"
     if [ -f "$official_install_path" ]; then
         if [ -n "$singbox_exe_to_remove" ] && [ "$singbox_exe_to_remove" != "$official_install_path" ]; then
@@ -805,7 +742,7 @@ uninstall_singbox() {
     else
         warn "未找到明确的 sing-box 执行文件进行删除 (已检查 ${SINGBOX_INSTALL_PATH_EXPECTED} 和 ${official_install_path})。"
     fi
-    
+
     read -p "是否删除配置文件目录 ${SINGBOX_CONFIG_DIR} (包含导入信息缓存)? (y/N): " delete_config_dir_confirm
     if [[ "$delete_config_dir_confirm" =~ ^[Yy]$ ]]; then
         if [ -d "$SINGBOX_CONFIG_DIR" ]; then
@@ -815,7 +752,7 @@ uninstall_singbox() {
     else
         info "配置文件目录 (${SINGBOX_CONFIG_DIR}) 已保留。"
     fi
-    
+
     read -p "是否删除 Hysteria2 证书目录 ${HYSTERIA_CERT_DIR}? (y/N): " delete_cert_dir_confirm
      if [[ "$delete_cert_dir_confirm" =~ ^[Yy]$ ]]; then
         if [ -d "$HYSTERIA_CERT_DIR" ]; then
@@ -848,19 +785,16 @@ manage_singbox() {
         start)
             systemctl start sing-box
             if systemctl is-active --quiet sing-box; then success "Sing-box 服务已启动。"; else error "Sing-box 服务启动失败。"; fi
-            pause_return_menu
             ;;
         stop)
             systemctl stop sing-box
             if ! systemctl is-active --quiet sing-box; then success "Sing-box 服务已停止。"; else error "Sing-box 服务停止失败。"; fi
-            pause_return_menu
             ;;
         restart)
             if [ -f "$SINGBOX_CONFIG_FILE" ]; then
                 info "重启前检查配置文件..."
                 if ! $SINGBOX_CMD check -c "$SINGBOX_CONFIG_FILE"; then
                     error "配置文件检查失败，无法重启。请先修复配置文件。"
-                    pause_return_menu
                     return 1
                 fi
                 success "配置文件检查通过。"
@@ -868,15 +802,12 @@ manage_singbox() {
             systemctl restart sing-box
             sleep 1
             if systemctl is-active --quiet sing-box; then success "Sing-box 服务已重启。"; else error "Sing-box 服务重启失败。"; fi
-            pause_return_menu
             ;;
         status)
             systemctl status sing-box --no-pager -l
-            pause_return_menu
             ;;
         log)
             journalctl -u sing-box -f --no-pager -n 50
-            pause_return_menu
             ;;
         view_config)
             if [ -f "$SINGBOX_CONFIG_FILE" ]; then
@@ -885,7 +816,6 @@ manage_singbox() {
             else
                 error "配置文件不存在: ${SINGBOX_CONFIG_FILE}"
             fi
-            pause_return_menu
             ;;
         edit_config)
             if [ -f "$SINGBOX_CONFIG_FILE" ]; then
@@ -895,7 +825,6 @@ manage_singbox() {
                     vim "$SINGBOX_CONFIG_FILE"
                 else
                     error "'nano' 或 'vim' 编辑器未安装。请手动编辑: ${SINGBOX_CONFIG_FILE}"
-                    pause_return_menu
                     return
                 fi
                 read -p "配置文件已编辑，是否立即重启 sing-box 服务? (y/N): " restart_confirm
@@ -905,348 +834,40 @@ manage_singbox() {
             else
                 error "配置文件不存在: ${SINGBOX_CONFIG_FILE}"
             fi
-            pause_return_menu
             ;;
         *)
             error "无效的管理操作: $action"
-            pause_return_menu
             ;;
     esac
 }
 
-update_script_online() {
-    local update_url="https://github.com/shangguan3366/One-Click-Proxy-Installer/raw/main/lvhy.sh"
-    local tmpfile="/tmp/lvhy_update_$$.sh"
-    echo "正在从远程仓库下载最新版脚本..."
-    if curl -fsSL "$update_url" -o "$tmpfile"; then
-        chmod +x "$tmpfile"
-        # 覆盖当前脚本
-        if [ -f "$0" ] && [ -w "$0" ]; then
-            cp "$tmpfile" "$0"
-            echo "已更新当前脚本：$0"
-        fi
-        # 覆盖快捷指令副本
-        if [ -n "$QUICK_CMD_NAME" ] && [ -f "/usr/local/bin/$QUICK_CMD_NAME" ]; then
-            sudo cp "$tmpfile" "/usr/local/bin/$QUICK_CMD_NAME"
-            sudo chmod +x "/usr/local/bin/$QUICK_CMD_NAME"
-            echo "已更新快捷指令副本：/usr/local/bin/$QUICK_CMD_NAME"
-        fi
-        rm -f "$tmpfile"
-        echo "脚本已更新为最新版，正在重新加载..."
-        update_run_stats
-        if [ -f "$STATS_FILE" ]; then
-            source "$STATS_FILE"
-        fi
-        sleep 1
-        exec "$0"
-    else
-        echo "下载失败，请检查网络或稍后重试。"
-        read -n 1 -s -r -p "按任意键返回主菜单..."
-        echo
-    fi
-}
-
-toolbox_menu() {
-    while true; do
-        clear
-        echo -e "${MAGENTA}${BOLD}================ 工具箱 ================${NC}"
-        echo "  1. 更新 Sing-box 内核 (使用官方beta脚本)"
-        echo "  2. 开发所有端口 (一键放行0-65535，风险自负)"
-        echo "  3. 本机信息"
-        echo "  4. DNS优化（国内/国外分流）"
-        echo "  5. BBR管理"
-        echo "  6. 组件管理"
-        echo "  7. 一键开启BBR3"
-        echo "  8. 系统时区调整"
-        echo "  9. 切换优先IPv4/IPv6"
-        echo " 10. 修改Root密码"
-        echo " 11. 开启Root密码登录"
-        echo " 12. 重启服务器"
-        echo "  0. 返回主菜单"
-        echo -e "${MAGENTA}${BOLD}========================================${NC}"
-        read -p "请输入选项 [0-12]: " tb_choice
-        case "$tb_choice" in
-            1)
-                install_singbox_core && manage_singbox "restart"
-                read -n 1 -s -r -p "按任意键返回工具箱..."
-                ;;
-            2)
-                echo -e "${YELLOW}警告：此操作将放行所有端口（0-65535），有极大安全风险，仅建议在受信任环境下使用！${NC}"
-                read -p "确定要继续吗？(y/N): " confirm_open
-                if [[ "$confirm_open" =~ ^[Yy]$ ]]; then
-                    if command -v ufw &>/dev/null; then
-                        sudo ufw allow 0:65535/tcp
-                        sudo ufw allow 0:65535/udp
-                        sudo ufw reload
-                        echo "已通过 ufw 放行全部端口。"
-                    elif command -v firewall-cmd &>/dev/null; then
-                        sudo firewall-cmd --permanent --add-port=0-65535/tcp
-                        sudo firewall-cmd --permanent --add-port=0-65535/udp
-                        sudo firewall-cmd --reload
-                        echo "已通过 firewalld 放行全部端口。"
-                    else
-                        echo "未检测到常见防火墙（ufw/firewalld），请手动放行端口。"
-                    fi
-                else
-                    echo "操作已取消。"
-                fi
-                read -n 1 -s -r -p "按任意键返回工具箱..."
-                ;;
-            3)
-                echo -e "${CYAN}${BOLD}\n========= 本机信息 =========${NC}"
-                # 主机名、系统
-                echo -e "${YELLOW}主机名:${NC}      $(hostname)"
-                echo -e "${YELLOW}系统:${NC}        $(uname -o)"
-                echo -e "${YELLOW}Linux版本:${NC}   $(uname -r)"
-                echo -e "${YELLOW}发行版:${NC}      $(. /etc/os-release 2>/dev/null; echo $PRETTY_NAME)"
-                # CPU
-                echo -e "${YELLOW}CPU架构:${NC}     $(uname -m)"
-                echo -e "${YELLOW}CPU型号:${NC}     $(awk -F: '/model name/ {print $2; exit}' /proc/cpuinfo | xargs)"
-                echo -e "${YELLOW}CPU核心数:${NC}   $(nproc)"
-                echo -e "${YELLOW}CPU占用:${NC}     $(top -bn1 | awk '/Cpu/ {print $2"%"; exit}')"
-                # 内存
-                mem_total=$(free -h | awk '/Mem:/ {print $2}')
-                mem_used=$(free -h | awk '/Mem:/ {print $3}')
-                swap_total=$(free -h | awk '/Swap:/ {print $2}')
-                swap_used=$(free -h | awk '/Swap:/ {print $3}')
-                echo -e "${YELLOW}物理内存:${NC}    $mem_used / $mem_total"
-                echo -e "${YELLOW}虚拟内存:${NC}    $swap_used / $swap_total"
-                # 硬盘
-                disk_total=$(df -h --total | awk '/total/ {print $2}')
-                disk_used=$(df -h --total | awk '/total/ {print $3}')
-                echo -e "${YELLOW}硬盘占用:${NC}    $disk_used / $disk_total"
-                # 流量
-                rx=$(cat /proc/net/dev | awk '/:/ {sum+=$2} END {print sum/1024/1024 " MB"}')
-                tx=$(cat /proc/net/dev | awk '/:/ {sum+=$10} END {print sum/1024/1024 " MB"}')
-                echo -e "${YELLOW}总接收流量:${NC}  $rx"
-                echo -e "${YELLOW}总发送流量:${NC}  $tx"
-                # 拥堵算法
-                cc_alg=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null)
-                echo -e "${YELLOW}网络拥堵算法:${NC} $cc_alg"
-                # 公网IP
-                ipv4=$(curl -s --max-time 3 https://api.ipify.org)
-                ipv6=$(curl -s --max-time 3 https://api6.ipify.org)
-                echo -e "${YELLOW}公网IPv4:${NC}    $ipv4"
-                echo -e "${YELLOW}公网IPv6:${NC}    $ipv6"
-                # 运营商与地理位置
-                ipinfo=$(curl -s --max-time 5 ipinfo.io/json)
-                isp=$(echo "$ipinfo" | grep 'org' | awk -F: '{print $2}' | tr -d ' ",')
-                loc=$(echo "$ipinfo" | grep 'city' | awk -F: '{print $2}' | tr -d ' ",')
-                country=$(echo "$ipinfo" | grep 'country' | awk -F: '{print $2}' | tr -d ' ",')
-                echo -e "${YELLOW}运营商:${NC}      $isp"
-                echo -e "${YELLOW}地理位置:${NC}    $loc, $country"
-                # 系统时间与运行时长
-                echo -e "${YELLOW}系统时间:${NC}    $(date '+%Y-%m-%d %H:%M:%S')"
-                echo -e "${YELLOW}运行时长:${NC}    $(uptime -p)"
-                echo -e "${CYAN}${BOLD}==============================${NC}\n"
-                read -n 1 -s -r -p "按任意键返回工具箱..."
-                ;;
-            4)
-                # DNS优化
-                echo -e "${CYAN}请选择DNS优化方案："
-                echo "  1. 国外DNS (1.1.1.1, 8.8.8.8)"
-                echo "  2. 国内DNS (223.5.5.5, 180.76.76.76, 114.114.114.114)"
-                echo "  0. 取消"
-                read -p "请输入选项 [0-2]: " dns_opt
-                case "$dns_opt" in
-                    1)
-                        echo -e "nameserver 1.1.1.1\nnameserver 8.8.8.8" | sudo tee /etc/resolv.conf
-                        echo "已切换为国外DNS。"
-                        ;;
-                    2)
-                        echo -e "nameserver 223.5.5.5\nnameserver 180.76.76.76\nnameserver 114.114.114.114" | sudo tee /etc/resolv.conf
-                        echo "已切换为国内DNS。"
-                        ;;
-                    *)
-                        echo "操作已取消。"
-                        ;;
-                esac
-                read -n 1 -s -r -p "按任意键返回工具箱..."
-                ;;
-            5)
-                # BBR管理
-                echo -e "${CYAN}BBR管理："
-                bbr_status=$(sysctl net.ipv4.tcp_congestion_control 2>/dev/null | grep -q bbr && echo 已开启 || echo 未开启)
-                echo -e "当前BBR状态：${GREEN}$bbr_status${NC}"
-                echo "  1. 开启BBR"
-                echo "  2. 关闭BBR"
-                echo "  0. 返回"
-                read -p "请输入选项 [0-2]: " bbr_opt
-                case "$bbr_opt" in
-                    1)
-                        sudo modprobe tcp_bbr
-                        echo 'net.core.default_qdisc=fq' | sudo tee -a /etc/sysctl.conf
-                        echo 'net.ipv4.tcp_congestion_control=bbr' | sudo tee -a /etc/sysctl.conf
-                        sudo sysctl -p
-                        echo "BBR已开启。"
-                        ;;
-                    2)
-                        sudo sed -i '/net.core.default_qdisc/d' /etc/sysctl.conf
-                        sudo sed -i '/net.ipv4.tcp_congestion_control/d' /etc/sysctl.conf
-                        sudo sysctl -p
-                        echo "BBR已关闭。"
-                        ;;
-                    *)
-                        echo "操作已取消。"
-                        ;;
-                esac
-                read -n 1 -s -r -p "按任意键返回工具箱..."
-                ;;
-            6)
-                # 组件管理
-                while true; do
-                    clear
-                    echo -e "${CYAN}组件管理："
-                    echo "  1. 安装curl"
-                    echo "  2. 安装wget"
-                    echo "  3. 安装sudo"
-                    echo "  4. 安装unzip"
-                    echo "  0. 返回"
-                    read -p "请输入选项 [0-4]: " comp_opt
-                    case "$comp_opt" in
-                        1)
-                            if command -v curl &>/dev/null; then echo "curl已安装。"; else sudo apt-get install -y curl || sudo yum install -y curl; fi
-                            ;;
-                        2)
-                            if command -v wget &>/dev/null; then echo "wget已安装。"; else sudo apt-get install -y wget || sudo yum install -y wget; fi
-                            ;;
-                        3)
-                            if command -v sudo &>/dev/null; then echo "sudo已安装。"; else apt-get install -y sudo || yum install -y sudo; fi
-                            ;;
-                        4)
-                            if command -v unzip &>/dev/null; then echo "unzip已安装。"; else sudo apt-get install -y unzip || sudo yum install -y unzip; fi
-                            ;;
-                        0)
-                            break
-                            ;;
-                        *)
-                            echo "无效选项。"; sleep 1
-                            ;;
-                    esac
-                    read -n 1 -s -r -p "按任意键返回组件管理..."
-                done
-                ;;
-            7)
-                # 一键开启BBR3
-                echo -e "${CYAN}一键开启BBR3："
-                if uname -r | grep -qE '5\.|6\.'; then
-                    sudo modprobe tcp_bbr
-                    echo 'net.core.default_qdisc=fq' | sudo tee -a /etc/sysctl.conf
-                    echo 'net.ipv4.tcp_congestion_control=bbr' | sudo tee -a /etc/sysctl.conf
-                    sudo sysctl -p
-                    echo "BBR3已尝试开启（如内核支持）。"
-                else
-                    echo "当前内核版本不支持BBR3。"
-                fi
-                read -n 1 -s -r -p "按任意键返回工具箱..."
-                ;;
-            8)
-                # 系统时区调整
-                echo -e "${CYAN}请选择时区："
-                echo "  1. Asia/Shanghai (中国)"
-                echo "  2. UTC (世界标准)"
-                echo "  0. 取消"
-                read -p "请输入选项 [0-2]: " tz_opt
-                case "$tz_opt" in
-                    1)
-                        sudo timedatectl set-timezone Asia/Shanghai
-                        echo "已切换为Asia/Shanghai。"
-                        ;;
-                    2)
-                        sudo timedatectl set-timezone UTC
-                        echo "已切换为UTC。"
-                        ;;
-                    *)
-                        echo "操作已取消。"
-                        ;;
-                esac
-                read -n 1 -s -r -p "按任意键返回工具箱..."
-                ;;
-            9)
-                # 切换优先IPv4/IPv6
-                echo -e "${CYAN}请选择优先协议："
-                echo "  1. 优先IPv4"
-                echo "  2. 优先IPv6"
-                echo "  0. 取消"
-                read -p "请输入选项 [0-2]: " ipver_opt
-                case "$ipver_opt" in
-                    1)
-                        sudo sed -i '/^precedence ::ffff:0:0\/96  100$/d' /etc/gai.conf
-                        echo 'precedence ::ffff:0:0/96  100' | sudo tee -a /etc/gai.conf
-                        echo "已设置为优先IPv4。"
-                        ;;
-                    2)
-                        sudo sed -i '/^precedence ::ffff:0:0\/96  100$/d' /etc/gai.conf
-                        echo "已设置为优先IPv6。"
-                        ;;
-                    *)
-                        echo "操作已取消。"
-                        ;;
-                esac
-                read -n 1 -s -r -p "按任意键返回工具箱..."
-                ;;
-            10)
-                # 修改Root密码
-                echo -e "${CYAN}请输入新Root密码："
-                sudo passwd root
-                read -n 1 -s -r -p "按任意键返回工具箱..."
-                ;;
-            11)
-                # 开启Root密码登录
-                sudo sed -i 's/^#*PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
-                sudo sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
-                sudo systemctl restart sshd || sudo systemctl restart ssh
-                echo "已开启Root密码登录（请确保已设置Root密码）。"
-                read -n 1 -s -r -p "按任意键返回工具箱..."
-                ;;
-            12)
-                # 重启服务器
-                echo -e "${YELLOW}警告：即将重启服务器，是否继续？${NC}"
-                read -p "输入y确认重启，其他键取消: " reboot_confirm
-                if [[ "$reboot_confirm" =~ ^[Yy]$ ]]; then
-                    sudo reboot
-                else
-                    echo "操作已取消。"
-                fi
-                read -n 1 -s -r -p "按任意键返回工具箱..."
-                ;;
-            0)
-                break
-                ;;
-            *)
-                echo "无效选项，请输入 0-12。"
-                sleep 1
-                ;;
-        esac
-    done
-}
 
 # --- Main Menu ---
 show_menu() {
-    clear
+    clear 
     print_author_info
-    echo -e "${MAGENTA}${BOLD}=================【安装相关】==================${NC}"
+
+    echo -e "${GREEN}${BOLD}安装选项:${NC}"
     echo "  1. 安装 Hysteria2 + Reality (共存)"
     echo "  2. 单独安装 Hysteria2"
     echo "  3. 单独安装 Reality (VLESS)"
-    echo -e "${MAGENTA}${BOLD}=================【管理相关】==================${NC}"
+    echo "------------------------------------------------"
+    echo -e "${YELLOW}${BOLD}管理选项:${NC}"
     echo "  4. 启动 Sing-box 服务"
     echo "  5. 停止 Sing-box 服务"
     echo "  6. 重启 Sing-box 服务"
     echo "  7. 查看 Sing-box 服务状态"
     echo "  8. 查看 Sing-box 实时日志"
     echo "  9. 查看当前配置文件"
-    echo " 10. 编辑当前配置文件 (nano/vim)"
-    echo " 11. 显示"节点"的导入信息 (含二维码)"
-    echo -e "${MAGENTA}${BOLD}=================【工具箱】====================${NC}"
-    echo " 12. 工具箱"
-    echo -e "${MAGENTA}${BOLD}=================【其他】======================${NC}"
-    echo " 13. 卸载 Sing-box"
-    echo " 14. 更改快捷指令"
-    echo " 15. 在线更新脚本"
+    echo "  10. 编辑当前配置文件 (nano/vim)"
+    echo "  11. 显示上次保存的导入信息 (含二维码)"
+    echo "------------------------------------------------"
+    echo -e "${RED}${BOLD}其他选项:${NC}"
+    echo "  12. 更新 Sing-box 内核 (使用官方beta脚本)"
+    echo "  13. 卸载 Sing-box"
     echo "  0. 退出脚本"
-    echo -e "${MAGENTA}${BOLD}===============================================${NC}"
-    read -p "请输入选项 [0-15]: " choice
+    echo "================================================"
+    read -p "请输入选项 [0-13]: " choice
 
     case "$choice" in
         1) install_hysteria2_reality ;;
@@ -1260,12 +881,10 @@ show_menu() {
         9) manage_singbox "view_config" ;;
         10) manage_singbox "edit_config" ;;
         11) show_current_import_info ;;
-        12) toolbox_menu ;;
+        12) install_singbox_core && manage_singbox "restart" ;;
         13) uninstall_singbox ;;
-        14) change_quick_cmd ;;
-        15) update_script_online ;;
         0) exit 0 ;;
-        *) error "无效选项，请输入 0 到 15 之间的数字。" ;;
+        *) error "无效选项，请输入 0 到 13 之间的数字。" ;;
     esac
     echo "" 
 }
@@ -1279,17 +898,5 @@ load_persistent_info
 # Main loop
 while true; do
     show_menu
-    # 只在需要时 pause，show_menu 内部不再 pause
-    # read -n 1 -s -r -p "按任意键返回主菜单 (或按 Ctrl+C 退出)..."
+    read -n 1 -s -r -p "按任意键返回主菜单 (或按 Ctrl+C 退出)..."
 done
-
-# --- 脚本末尾自动化一键设置快捷命令功能 ---
-if [ "$(basename $0)" != "$QUICK_CMD_NAME" ] && [ ! -f "/usr/local/bin/$QUICK_CMD_NAME" ]; then
-    echo "\n检测到你还没有设置快捷命令，是否添加？"
-    read -p "输入 y 添加快捷命令 $QUICK_CMD_NAME，输入 n 跳过 [y/n]: " quick_choice
-    if [[ "$quick_choice" =~ ^[Yy]$ ]]; then
-        sudo cp "$0" "/usr/local/bin/$QUICK_CMD_NAME"
-        sudo chmod +x "/usr/local/bin/$QUICK_CMD_NAME"
-        echo "\n现在你可以直接输入 $QUICK_CMD_NAME 快速管理 Sing-Box 节点了！"
-    fi
-fi
