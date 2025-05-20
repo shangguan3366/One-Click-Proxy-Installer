@@ -102,7 +102,7 @@ sudo bash lvhy.sh
 - [老王一键工具箱](https://github.com/eooce/ssh_tool) #老王
 curl -fsSL https://raw.githubusercontent.com/eooce/ssh_tool/main/ssh_tool.sh -o ssh_tool.sh && chmod +x ssh_tool.sh && ./ssh_tool.sh #建议快捷命令改为 w避免冲突！
 
-- [科技lion一键脚本] #科技lion
+- [科技lion一键脚本] #科技
 bash <(curl -sL kejilion.sh) #建议快捷命令改为 i
 
 - 安卓/iOS/PC 推荐客户端：
@@ -121,8 +121,8 @@ bash <(curl -sL kejilion.sh) #建议快捷命令改为 i
 
 ## VPS/BBR/IPv6 脚本推荐
 
-- [WARP 一键脚本](https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh)
-- [BBR v3 一键加速](https://raw.githubusercontent.com/byJoey/Actions-bbr-v3/refs/heads/main/install.sh)
+- [WARP 一键脚本](https://gitlab.com/fscarmen/warp/)
+- [BBR v3 一键加速](https://raw.githubusercontent.com/byJoey/Actions-bbr-v3/)
 
 ---
 
