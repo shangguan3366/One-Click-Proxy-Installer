@@ -3,6 +3,59 @@
 # 适配主流 Linux/MacOS，支持 IPv6，结构清晰，便于扩展
 # 作者：AI助手
 
+# ========== 统计信息与作者信息 ==========
+STATS_FILE="$HOME/.box_stats"
+AUTHOR_NAME="AI助手"
+PROJECT_NAME="sing-box 多协议管理工具箱"
+
+update_run_stats() {
+    local today total today_str
+    today_str=$(date +%Y-%m-%d)
+    if [ -f "$STATS_FILE" ]; then
+        source "$STATS_FILE"
+    else
+        RUN_TOTAL=0
+        RUN_TODAY=0
+        RUN_TODAY_DATE="$today_str"
+    fi
+    if [ "$RUN_TODAY_DATE" = "$today_str" ]; then
+        RUN_TODAY=$((RUN_TODAY+1))
+    else
+        RUN_TODAY=1
+        RUN_TODAY_DATE="$today_str"
+    fi
+    RUN_TOTAL=$((RUN_TOTAL+1))
+    cat > "$STATS_FILE" <<EOF
+RUN_TOTAL=$RUN_TOTAL
+RUN_TODAY=$RUN_TODAY
+RUN_TODAY_DATE="$RUN_TODAY_DATE"
+EOF
+}
+
+print_author_info() {
+    echo -e "\033[35;1m================================================${NC}"
+    echo -e "\033[1;33m 项目名称: $PROJECT_NAME ${NC}"
+    echo -e "\033[35;1m================================================${NC}"
+    echo -e "\033[36;1m sing-box 多协议节点管理脚本 ${NC}"
+    echo -e "\033[35;1m================================================${NC}"
+    echo -e " \033[33m作者:${NC}      \033[32m${AUTHOR_NAME}${NC}"
+    echo -e " \033[33m今日运行次数:${NC} \033[32m${RUN_TODAY}${NC}   \033[33m总运行次数:${NC} \033[32m${RUN_TOTAL}${NC}"
+    echo -e "\033[35;1m================================================${NC}"
+}
+
+# ========== 彩色输出辅助函数 ==========
+RED="\033[31m"; GREEN="\033[32m"; YELLOW="\033[33m"; BLUE="\033[36m"; NC="\033[0m"
+info() { echo -e "${BLUE}[INFO]${NC} $1"; }
+warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
+error() { echo -e "${RED}[ERROR]${NC} $1"; }
+success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
+
+# ========== 统计初始化 ==========
+update_run_stats
+if [ -f "$STATS_FILE" ]; then
+    source "$STATS_FILE"
+fi
+
 set -e
 
 # 检查 root 权限
@@ -37,6 +90,7 @@ save_nodes() {
 # 主菜单
 main_menu() {
   clear
+  print_author_info
   echo -e "${BLUE}================== sing-box 多协议管理工具箱 ==================${NC}"
   echo -e "${GREEN}1.${NC} 节点管理（添加/删除/导入/导出/二维码/多协议）"
   echo -e "${GREEN}2.${NC} 工具箱（常用网络/系统工具，后续可扩展）"
