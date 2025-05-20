@@ -20,6 +20,7 @@ CONFIG_FILE="/etc/sing-box/config.json"
 
 # 初始化节点存储文件
 init_node_file() {
+  mkdir -p /etc/sing-box
   [ -f "$NODE_FILE" ] || echo '[]' > "$NODE_FILE"
 }
 
