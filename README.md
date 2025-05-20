@@ -190,14 +190,14 @@ akile的dns解锁流媒体vps [akile](https://akile.io/register?aff_code=9953229
 ### 🚀 如何使用？
 >>>
 #若VPS是纯IPV6,如"德基euserv""哈鸡Hax"; 我们可以先给它添加warp的IPV4:
----
+
 >apt-get update && apt-get install -y curl #(更新系统养成习惯)
 
 #套warp
----
+
 ```wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash menu.sh [option] [lisence/url/token]#warp
 
----
+
 
 **一键部署BBR加速**  
    ```bash
