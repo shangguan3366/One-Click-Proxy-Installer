@@ -124,9 +124,9 @@ bash <(curl -sL kejilion.sh) #建议快捷命令改为 i
 
 ---
 
-## VPS/仅IPV6 脚本推荐
+## VPS仅IPV6/IPV4 脚本推荐
 
-- [WARP 一键脚本](https://gitlab.com/fscarmen/warp)
+- [WARP 一键脚本](https://gitlab.com/fscarmen/warp)先套IPV4/IPV6：
 
 ```bash
 wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash menu.sh [option] [lisence/url/token]
