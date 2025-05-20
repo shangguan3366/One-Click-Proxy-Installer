@@ -232,19 +232,6 @@ akile的dns解锁流媒体vps [akile](https://akile.io/register?aff_code=9953229
 ## 欢迎添加小⭐⭐
 
 
- 
-## 免责声明:
-*   本脚本仅为学习和测试目的提供。
-*   请遵守当地法律法规，不要将此脚本用于非法用途。
-*   作者不对使用此脚本可能造成的任何后果负责。
-
-
-## 致谢
-
-*   [Sing-Box](https://github.com/SagerNet/sing-box) *   [开源项目](https://github.com/Netflixxp/vlhy2)及其开发者。
-*   所有为开源社区做出贡献的人。 
-*   [副本](https://github.com/shangguan3366/vlhy2)
-
 
 
 ## 贡献
@@ -258,6 +245,18 @@ MIT License
 维护者：Zhong Yuan
 
 
+
+## 免责声明:
+*   本脚本仅为学习和测试目的提供。
+*   请遵守当地法律法规，不要将此脚本用于非法用途。
+*   作者不对使用此脚本可能造成的任何后果负责。
+
+
+## 致谢
+
+*   [Sing-Box](https://github.com/SagerNet/sing-box) *   [开源项目](https://github.com/Netflixxp/vlhy2)及其开发者。
+*   所有为开源社区做出贡献的人。 
+*   [副本](https://github.com/shangguan3366/vlhy2)
 
 
 
