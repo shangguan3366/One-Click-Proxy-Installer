@@ -565,13 +565,13 @@ export_node() {
       sni=$(echo "$n" | jq -r .sni)
       pubkey=$(echo "$n" | jq -r .pubkey)
       shortid=$(echo "$n" | jq -r .shortid)
-      echo "vless://$uuid@your.domain:$port?encryption=none&security=reality&sni=$sni&fp=chrome&pbk=$pubkey&sid=$shortid#${name}"
+      echo "vless://$uuid@$SERVER_IP:$port?encryption=none&security=reality&sni=$sni&fp=chrome&pbk=$pubkey&sid=$shortid#${name}"
     elif [ "$proto" = "hysteria2" ]; then
       password=$(echo "$n" | jq -r .password)
       port=$(echo "$n" | jq -r .port)
       sni=$(echo "$n" | jq -r .sni)
       alpn=$(echo "$n" | jq -r .alpn)
-      echo "hy2://$password@your.domain:$port?sni=$sni&alpn=$alpn#${name}"
+      echo "hy2://$password@$SERVER_IP:$port?sni=$sni&alpn=$alpn#${name}"
     fi
   done
   pause_return_menu node_menu
@@ -621,13 +621,13 @@ show_qr() {
     sni=$(echo "$n" | jq -r .sni)
     pubkey=$(echo "$n" | jq -r .pubkey)
     shortid=$(echo "$n" | jq -r .shortid)
-    link="vless://$uuid@your.domain:$port?encryption=none&security=reality&sni=$sni&fp=chrome&pbk=$pubkey&sid=$shortid#${name}"
+    link="vless://$uuid@$SERVER_IP:$port?encryption=none&security=reality&sni=$sni&fp=chrome&pbk=$pubkey&sid=$shortid#${name}"
   elif [ "$proto" = "hysteria2" ]; then
     password=$(echo "$n" | jq -r .password)
     port=$(echo "$n" | jq -r .port)
     sni=$(echo "$n" | jq -r .sni)
     alpn=$(echo "$n" | jq -r .alpn)
-    link="hy2://$password@your.domain:$port?sni=$sni&alpn=$alpn#${name}"
+    link="hy2://$password@$SERVER_IP:$port?sni=$sni&alpn=$alpn#${name}"
   else
     echo -e "${RED}暂不支持该协议二维码显示。${NC}"
     pause_return_menu node_menu
@@ -810,6 +810,9 @@ about_script() {
 pause_return_menu() {
   echo -e "\n按任意键返回..."; read -n 1 -s; $1
 }
+
+# 在主流程初始化时检测IP
+get_server_ip
 
 # 启动时初始化节点文件
 init_node_file
