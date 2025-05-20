@@ -14,11 +14,11 @@
 **1. 下载并运行脚本（任选一种方式）：**
 
 ```bash
-wget -O lvhy.sh https://github.com/shangguancaiyun/One-Click-Proxy-Installer/raw/main/lvhy.sh && chmod +x lvhy.sh && ./lvhy.sh
+wget -O lvhy.sh https://github.com/shangguan3366/One-Click-Proxy-Installer/raw/main/lvhy.sh && chmod +x lvhy.sh && ./lvhy.sh
 ```
 或
 ```bash
-bash <(curl -sSL https://github.com/shangguancaiyun/One-Click-Proxy-Installer/raw/main/lvhy.sh)
+bash <(curl -sSL https://github.com/shangguan3366/One-Click-Proxy-Installer/raw/main/lvhy.sh)
 ```
 
 **2. 再次运行脚本，或用快捷命令 `k`：**
