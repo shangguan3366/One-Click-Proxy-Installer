@@ -199,6 +199,7 @@ akile的dns解锁流媒体vps [akile](https://akile.io/register?aff_code=9953229
 
 *   [Sing-Box](https://github.com/SagerNet/sing-box) 项目及其开发者。
 *   所有为开源社区做出贡献的人。
+*   [项目原作者](https://github.com/Netflixxp/vlhy2) 
 
 
 
