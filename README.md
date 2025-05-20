@@ -1,33 +1,42 @@
-# Sing-Box Hysteria2 & Reality 一键安装脚本
+# One-Click-Proxy-Installer 一键安装脚本
 
-> **适用人群：Linux 新手/小白，零基础也能用！**
+## 🌟 简介
 
-## 简介
+> 真正适合小白自己折腾的脚本！
+> 快捷启动命令：`k`
 
-本脚本可在 Linux 服务器上一键安装、配置和管理 [Sing-Box](https://github.com/SagerNet/sing-box) 的 Hysteria2 和 Reality (VLESS) 节点。无需手动配置，自动生成所有参数，菜单操作，极简上手。
+本脚本用于在 Linux 服务器上快速安装、配置和管理 [Sing-Box](https://github.com/SagerNet/sing-box)，特别针对 Hysteria2 和 VLESS Reality 协议优化。
 
 ---
 
-## 一键安装方法（推荐）
+## ✨ 使用方法
 
 **1. 下载并运行脚本（任选一种方式）：**
 
 ```bash
-wget -O lvhy.sh https://github.com/shangguan3366/One-Click-Proxy-Installer/raw/main/lvhy.sh && chmod +x lvhy.sh && sudo ./lvhy.sh
+wget -O lvhy.sh https://github.com/shangguancaiyun/One-Click-Proxy-Installer/raw/main/lvhy.sh && chmod +x lvhy.sh && ./lvhy.sh
 ```
 或
 ```bash
-sudo bash <(curl -sSL https://github.com/shangguan3366/One-Click-Proxy-Installer/raw/main/lvhy.sh)
+bash <(curl -sSL https://github.com/shangguancaiyun/One-Click-Proxy-Installer/raw/main/lvhy.sh)
 ```
 
-**2. 按提示选择菜单，输入数字即可完成安装和管理。**
+**2. 再次运行脚本，或用快捷命令 `k`：**
 
-- 选择【1】一键安装 Hysteria2 + Reality（共存）
-- 选择【2】只装 Hysteria2
-- 选择【3】只装 Reality (VLESS)
+```bash
+sudo bash lvhy.sh
+```
+
+脚本将以 root 权限运行，并显示主菜单。
+
+**3. 按提示选择菜单，输入数字即可完成安装和管理。**
+
+- 1：一键安装 Hysteria2 + Reality（共存）
+- 2：只装 Hysteria2
+- 3：只装 Reality (VLESS)
 - 其他选项可管理服务、查看/编辑配置、卸载等
 
-**3. 安装完成后，终端会显示所有导入信息和二维码，直接扫码或复制即可用。**
+**4. 安装完成后，终端会显示所有节点和二维码，直接扫码或复制即可用。**
 
 ---
 
@@ -41,15 +50,97 @@ sudo bash <(curl -sSL https://github.com/shangguan3366/One-Click-Proxy-Installer
 
 ---
 
-## 免责声明
+## 菜单选项说明
 
-- 本脚本仅供学习和测试，请勿用于非法用途。
-- 使用前请确保符合当地法律法规，风险自负。
+```
+================================================
+ Sing-Box Hysteria2 & Reality 管理脚本
+================================================
+ 作者: Zhong Yuan
+================================================
+安装选项:
+  1. 安装 Hysteria2 + Reality (共存)
+  2. 单独安装 Hysteria2
+  3. 单独安装 Reality (VLESS)
+------------------------------------------------
+管理选项:
+  4. 启动 Sing-box 服务
+  5. 停止 Sing-box 服务
+  6. 重启 Sing-box 服务
+  7. 查看 Sing-box 服务状态
+  8. 查看 Sing-box 实时日志
+  9. 查看当前配置文件
+ 10. 编辑当前配置文件 (使用 nano)
+ 11. 显示上次保存的导入信息 (含二维码)
+------------------------------------------------
+其他选项:
+ 12. 更新 Sing-box 内核 (使用官方beta脚本)
+ 13. 卸载 Sing-box
+  0. 退出脚本
+================================================
+```
 
 ---
 
+## 注意事项
+
+- **防火墙**：如启用 ufw/firewalld，需放行相关端口。
+  - 例如 Reality 用 443，Hysteria2 用 8443：
+    ```bash
+    sudo ufw allow 443/tcp
+    sudo ufw allow 8443/tcp
+    sudo ufw allow 8443/udp # Hysteria2 需要 UDP
+    sudo ufw reload
+    ```
+
+- **在线订阅转换网站**：[订阅转换](https://sub.crazyact.com/)
+
+---
+
+## 推荐工具箱/三方客户端
+
+- [老王一键工具箱](https://github.com/eooce/ssh_tool)（建议快捷命令改为 w）
+- [科技lion一键脚本](https://github.com/kejilion/kejilion.sh)（建议快捷命令改为 i）
+- 安卓/iOS/PC 推荐客户端：
+  - [Karing](https://github.com/KaringX/karing/releases)（免费开源，强烈推荐）
+  - [nekobox](https://github.com/MatsuriDayo/NekoBoxForAndroid/releases)
+  - [husi](https://github.com/xchacha20-poly1305/husi/releases)
+  - [Clash-Meta](https://github.com/MetaCubeX/ClashMetaForAndroid/releases)
+  - [hiddify](https://github.com/hiddify/hiddify-next/releases)
+  - [v2rayNG](https://github.com/2dust/v2rayNG/releases)
+  - [Clash-Verge](https://github.com/clash-verge-rev/clash-verge-rev/releases)
+  - [v2rayN](https://github.com/2dust/v2rayN/releases)
+
+- 服务器推荐：[akile](https://akile.io/register?aff_code=99532291-0323-491e-bdd7-fbcfebbd1fa5)
+
+---
+
+## VPS/BBR/IPv6 脚本推荐
+
+- [WARP 一键脚本](https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh)
+- [BBR v3 一键加速](https://raw.githubusercontent.com/byJoey/Actions-bbr-v3/refs/heads/main/install.sh)
+
+---
+
+## 贡献
+
+欢迎提交 Pull Requests 或在 Issues 中报告错误、提出建议。
+
+## 开源协议
+
+MIT License  |  维护者：Zhong Yuan
+
+## 免责声明
+
+- 本脚本仅供学习和测试，请勿用于非法用途。
+- 作者不对使用此脚本可能造成的任何后果负责。
+
 ## 致谢
 
-- [Sing-Box](https://github.com/SagerNet/sing-box) 及其开发者
-- 开源社区所有贡献者
+- [Sing-Box](https://github.com/SagerNet/sing-box)
+- [开源项目](https://github.com/Netflixxp/vlhy2)及其开发者
+- 所有为开源社区做出贡献的人
+- [副本](https://github.com/shangguan3366/vlhy2)
+
+
 
