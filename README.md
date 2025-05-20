@@ -11,6 +11,11 @@
 
 ## ✨ 使用方法
 
+**更新系统：**
+
+```bash
+apt-get update && apt-get install -y curl
+```
 **1. 下载并运行脚本（任选一种方式）：**
 
 ```bash
@@ -119,10 +124,11 @@ bash <(curl -sL kejilion.sh) #建议快捷命令改为 i
 
 ---
 
-## VPS/BBR/IPv6 脚本推荐
+## VPS/仅IPV6 脚本推荐
 
 - [WARP 一键脚本](https://gitlab.com/fscarmen/warp)
-- [BBR v3 一键加速](https://github.com/byJoey/Actions-bbr-v3)
+
+
 
 ---
 
