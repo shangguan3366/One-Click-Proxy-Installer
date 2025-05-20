@@ -99,7 +99,8 @@ sudo bash lvhy.sh
 
 ## 推荐工具箱/三方客户端
 
-- [老王一键工具箱](https://github.com/eooce/ssh_tool)（建议快捷命令改为 w）
+- [老王一键工具箱](https://github.com/eooce/ssh_tool)[老王一键工具箱
+curl -fsSL https://raw.githubusercontent.com/eooce/ssh_tool/main/ssh_tool.sh -o ssh_tool.sh && chmod +x ssh_tool.sh && ./ssh_tool.sh 建议快捷命令改为 w]
 - [科技lion一键脚本](https://github.com/kejilion/kejilion.sh)（建议快捷命令改为 i）
 - 安卓/iOS/PC 推荐客户端：
   - [Karing](https://github.com/KaringX/karing/releases)（免费开源，强烈推荐）
