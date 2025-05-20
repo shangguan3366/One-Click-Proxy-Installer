@@ -617,8 +617,14 @@ display_and_store_config_info() {
 
     echo -e "${MAGENTA}${BOLD}================= 节点信息 =================${NC}"
     if [ "$mode" == "all" ] || [ "$mode" == "hysteria2" ]; then
+        # IPv6加中括号
+        if [[ "$LAST_SERVER_IP" == *:* ]]; then
+            HY2_HOST="[$LAST_SERVER_IP]"
+        else
+            HY2_HOST="$LAST_SERVER_IP"
+        fi
         HY2_PASSWORD_B64=$(echo -n "${LAST_HY2_PASSWORD}" | base64 | tr '+/' '-_' | tr -d '=')
-        LAST_HY2_LINK="hy2://${HY2_PASSWORD_B64}@${LAST_SERVER_IP}:${LAST_HY2_PORT}?peer=${LAST_SERVER_IP}&sni=${LAST_HY2_MASQUERADE_CN}&alpn=h3&insecure=1#Hy2-${LAST_SERVER_IP}"
+        LAST_HY2_LINK="hy2://${HY2_PASSWORD_B64}@${HY2_HOST}:${LAST_HY2_PORT}?peer=${HY2_HOST}&sni=${LAST_HY2_MASQUERADE_CN}&alpn=h3&insecure=1#Hy2-${LAST_SERVER_IP}"
         echo -e "${GREEN}${BOLD} Hysteria2 配置信息:${NC}"
         echo -e "服务器地址: ${GREEN}${LAST_SERVER_IP}${NC}"
         echo -e "端口: ${GREEN}${LAST_HY2_PORT}${NC}"
@@ -634,7 +640,12 @@ display_and_store_config_info() {
         echo -e "${MAGENTA}${BOLD}--------------------------------------------${NC}"
     fi
     if [ "$mode" == "all" ] || [ "$mode" == "reality" ]; then
-        LAST_VLESS_LINK="vless://${LAST_REALITY_UUID}@${LAST_SERVER_IP}:${LAST_REALITY_PORT}?type=tcp&security=reality&sni=${LAST_REALITY_SNI}&fp=${LAST_REALITY_FINGERPRINT}&pbk=${LAST_REALITY_PUBLIC_KEY}&sid=${LAST_REALITY_SHORT_ID}&flow=xtls-rprx-vision#Reality-${LAST_SERVER_IP}"
+        if [[ "$LAST_SERVER_IP" == *:* ]]; then
+            VLESS_HOST="[$LAST_SERVER_IP]"
+        else
+            VLESS_HOST="$LAST_SERVER_IP"
+        fi
+        LAST_VLESS_LINK="vless://${LAST_REALITY_UUID}@${VLESS_HOST}:${LAST_REALITY_PORT}?type=tcp&security=reality&sni=${LAST_REALITY_SNI}&fp=${LAST_REALITY_FINGERPRINT}&pbk=${LAST_REALITY_PUBLIC_KEY}&sid=${LAST_REALITY_SHORT_ID}&flow=xtls-rprx-vision#Reality-${LAST_SERVER_IP}"
         echo -e "${GREEN}${BOLD} Reality (VLESS) 配置信息:${NC}"
         echo -e "服务器地址: ${GREEN}${LAST_SERVER_IP}${NC}"
         echo -e "端口: ${GREEN}${LAST_REALITY_PORT}${NC}"
