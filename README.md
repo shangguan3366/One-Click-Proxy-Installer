@@ -107,7 +107,7 @@ sudo bash lvhy.sh
 - [老王一键工具箱](https://github.com/eooce/ssh_tool)：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/eooce/ssh_tool/main/ssh_tool.sh -o ssh_tool.sh && chmod +x ssh_tool.sh && ./ssh_tool.sh#建议快捷命令改为 w避免冲突！
+curl -fsSL https://raw.githubusercontent.com/eooce/ssh_tool/main/ssh_tool.sh -o ssh_tool.sh && chmod +x ssh_tool.sh && ./ssh_tool.sh#建议快捷命令改为 w 避免冲突！
 ```
 
 - [科技lion一键脚本]：
