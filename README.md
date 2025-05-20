@@ -11,12 +11,8 @@
 
 ## ✨ 使用方法
 
-**1. 下载并运行脚本（任选一种方式）：**
+**1. 下载并运行脚本：**
 
-```bash
-wget -O lvhy.sh https://github.com/shangguan3366/One-Click-Proxy-Installer/raw/main/lvhy.sh && chmod +x lvhy.sh && ./lvhy.sh
-```
-或
 ```bash
 bash <(curl -sSL https://github.com/shangguan3366/One-Click-Proxy-Installer/raw/main/lvhy.sh)
 ```
