@@ -128,6 +128,10 @@ bash <(curl -sL kejilion.sh) #建议快捷命令改为 i
 
 - [WARP 一键脚本](https://gitlab.com/fscarmen/warp)
 
+```bash
+wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash menu.sh [option] [lisence/url/token]
+```
+
 
 
 ---
