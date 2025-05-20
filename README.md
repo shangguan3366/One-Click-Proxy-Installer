@@ -16,14 +16,10 @@
 ```bash
 apt-get update && apt-get install -y curl
 ```
-**1. 下载并运行脚本（任选一种方式）：**
+**1. 下载并运行脚本：**
 
 ```bash
-wget -O lvhy.sh https://github.com/shangguancaiyun/One-Click-Proxy-Installer/raw/main/lvhy.sh && chmod +x lvhy.sh && ./lvhy.sh
-```
-或
-```bash
-bash <(curl -sSL https://github.com/shangguancaiyun/One-Click-Proxy-Installer/raw/main/lvhy.sh)
+curl -fsSL "https://github.com/shangguancaiyun/One-Click-Proxy-Installer/raw/main/lvhy.sh" -o lvhy.sh chmod +x lvhy.sh
 ```
 
 **2. 再次运行脚本，或用快捷命令 `k`：**
