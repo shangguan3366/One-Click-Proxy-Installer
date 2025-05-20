@@ -185,32 +185,6 @@ hiddfy,Shadowrocket等
 akile的dns解锁流媒体vps [akile](https://akile.io/register?aff_code=99532291-0323-491e-bdd7-fbcfebbd1fa5)
 
 
-## 欢迎添加小⭐⭐
-
-
- 
-## 免责声明:
-*   本脚本仅为学习和测试目的提供。
-*   请遵守当地法律法规，不要将此脚本用于非法用途。
-*   作者不对使用此脚本可能造成的任何后果负责。
-
-
-## 致谢
-
-*   [Sing-Box](https://github.com/SagerNet/sing-box) *   [项目原创](https://github.com/Netflixxp/vlhy2)项目及其开发者。
-*   所有为开源社区做出贡献的人。 
-
-
-
-## 贡献
-
-欢迎提交 Pull Requests 或在 Issues 中报告错误、提出建议。
-
-## 开源协议
-
-MIT License
-
-维护者：Zhong Yuan
 
 
 
@@ -249,3 +223,44 @@ MIT License
 
 
 >
+
+
+
+
+
+
+## 欢迎添加小⭐⭐
+
+
+ 
+## 免责声明:
+*   本脚本仅为学习和测试目的提供。
+*   请遵守当地法律法规，不要将此脚本用于非法用途。
+*   作者不对使用此脚本可能造成的任何后果负责。
+
+
+## 致谢
+
+*   [Sing-Box](https://github.com/SagerNet/sing-box) *   [项目原创](https://github.com/Netflixxp/vlhy2)项目及其开发者。
+*   所有为开源社区做出贡献的人。 
+
+
+
+## 贡献
+
+欢迎提交 Pull Requests 或在 Issues 中报告错误、提出建议。
+
+## 开源协议
+
+MIT License
+
+维护者：Zhong Yuan
+
+
+
+
+
+
+
+
+
