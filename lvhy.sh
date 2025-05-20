@@ -91,13 +91,13 @@ save_nodes() {
 main_menu() {
   clear
   print_author_info
-  echo -e "${BLUE}================== sing-box 多协议管理工具箱 ==================${NC}"
+  echo -e "${MAGENTA}${BOLD}================== 主菜单 ==================${NC}"
   echo -e "${GREEN}1.${NC} 节点管理（添加/删除/导入/导出/二维码/多协议）"
   echo -e "${GREEN}2.${NC} 工具箱（常用网络/系统工具，后续可扩展）"
   echo -e "${GREEN}3.${NC} 系统维护（备份/恢复/日志/证书/IPv6）"
   echo -e "${GREEN}4.${NC} 脚本管理（安装/更新/卸载/关于）"
   echo -e "${GREEN}0.${NC} 退出"
-  echo -e "${BLUE}==============================================================${NC}"
+  echo -e "${MAGENTA}${BOLD}============================================${NC}"
   read -rp "请输入选项 [0-4]: " menu_num
   case $menu_num in
     1) node_menu ;;
@@ -112,7 +112,7 @@ main_menu() {
 # 节点管理菜单（预留功能接口）
 node_menu() {
   clear
-  echo -e "${YELLOW}------ 节点管理 ------${NC}"
+  echo -e "${CYAN}${BOLD}------ 节点管理 ------${NC}"
   echo -e "1. 添加节点"
   echo -e "2. 删除节点"
   echo -e "3. 查看节点"
@@ -120,6 +120,7 @@ node_menu() {
   echo -e "5. 批量导出节点"
   echo -e "6. 显示节点二维码"
   echo -e "7. 返回主菜单"
+  echo -e "${CYAN}${BOLD}----------------------${NC}"
   read -rp "请选择 [1-7]: " node_num
   case $node_num in
     1) add_node ;;
@@ -136,13 +137,16 @@ node_menu() {
 # 工具箱菜单（预留功能接口）
 toolbox_menu() {
   clear
-  echo -e "${YELLOW}------ 工具箱 ------${NC}"
+  echo -e "${MAGENTA}${BOLD}------ 工具箱 ------${NC}"
   echo -e "1. 安装常用工具（如 btop、htop、speedtest 等）"
-  echo -e "2. 返回主菜单"
-  read -rp "请选择 [1-2]: " tool_num
+  echo -e "2. 查看本机信息"
+  echo -e "3. 返回主菜单"
+  echo -e "${MAGENTA}${BOLD}--------------------${NC}"
+  read -rp "请选择 [1-3]: " tool_num
   case $tool_num in
     1) install_tools ;;
-    2) main_menu ;;
+    2) show_sysinfo ;;
+    3) main_menu ;;
     *) echo -e "${RED}无效输入！${NC}"; sleep 1; toolbox_menu ;;
   esac
 }
