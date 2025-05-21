@@ -22,7 +22,7 @@ apt-get update && apt-get install -y curl
 curl -fsSL "https://github.com/shangguancaiyun/One-Click-Proxy-Installer/raw/main/install.sh" -o install.sh ; chmod +x install.sh
 ```
 
-**命令2. 再次运行脚本，之后可快捷命令： `box`**
+**命令2. 再次运行可启动脚本，之后可快捷命令： `box`**
 
 ```bash
 sudo bash install.sh
