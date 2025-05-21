@@ -1267,7 +1267,14 @@ show_menu() {
         9) manage_singbox "view_config" ;;
         10) manage_singbox "edit_config" ;;
         11) show_current_import_info ;;
-        12) modify_node_params ;;
+        12)
+            if [ ! -f "$SINGBOX_CONFIG_FILE" ]; then
+                error "未检测到配置文件（$SINGBOX_CONFIG_FILE），请先通过主菜单 1/2/3 完成节点安装。"
+                pause_return_menu
+            else
+                modify_node_params
+            fi
+            ;;
         13) toolbox_menu ;;
         14) uninstall_singbox ;;
         15) change_quick_cmd ;;
