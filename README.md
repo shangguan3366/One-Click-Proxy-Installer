@@ -154,7 +154,7 @@ MIT License  |  维护者：Zhong Yuan
 ## 致谢
 
 - [Sing-Box](https://github.com/SagerNet/sing-box)
-- [开源项目](https://github.com/Netflixxp/vlhy2)及其开发者
+- 感谢[项目](https://github.com/Netflixxp/vlhy2)及其开发者，提供的技术支持与灵感参考。
 - 所有为开源社区做出贡献的人
 - [副本](https://github.com/shangguan3366/vlhy2)
 
