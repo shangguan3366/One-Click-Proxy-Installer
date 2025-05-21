@@ -370,8 +370,8 @@ generate_reality_credentials() {
         fi
     fi
     info "使用命令 '$SINGBOX_CMD' 生成 Reality UUID 和 Keypair..."
-    
-    info "执行: $SINGBOX_CMD generate uuid"
+
+    # 只生成一次 UUID
     REALITY_UUID_VAL=$($SINGBOX_CMD generate uuid)
     CMD_EXIT_CODE=$?
     if [ $CMD_EXIT_CODE -ne 0 ] || [ -z "$REALITY_UUID_VAL" ]; then
@@ -382,7 +382,7 @@ generate_reality_credentials() {
     info "生成的 UUID: $REALITY_UUID_VAL"
     LAST_REALITY_UUID="$REALITY_UUID_VAL"
 
-    info "执行: $SINGBOX_CMD generate reality-keypair"
+    # 只生成一次 Reality 密钥对
     KEY_PAIR_OUTPUT=$($SINGBOX_CMD generate reality-keypair)
     CMD_EXIT_CODE=$?
     if [ $CMD_EXIT_CODE -ne 0 ] || [ -z "$KEY_PAIR_OUTPUT" ]; then
@@ -392,12 +392,9 @@ generate_reality_credentials() {
     fi
     info "原始 Keypair 输出:"
     echo "$KEY_PAIR_OUTPUT"
-    
-    REALITY_PRIVATE_KEY_VAL=$(echo "$KEY_PAIR_OUTPUT" | awk -F': ' '/PrivateKey:/ {print $2}')
-    REALITY_PUBLIC_KEY_VAL=$(echo "$KEY_PAIR_OUTPUT" | awk -F': ' '/PublicKey:/ {print $2}')
-    
-    REALITY_PRIVATE_KEY_VAL=$(echo "${REALITY_PRIVATE_KEY_VAL}" | xargs)
-    REALITY_PUBLIC_KEY_VAL=$(echo "${REALITY_PUBLIC_KEY_VAL}" | xargs)
+
+    REALITY_PRIVATE_KEY_VAL=$(echo "$KEY_PAIR_OUTPUT" | awk -F': ' '/PrivateKey:/ {print $2}' | xargs)
+    REALITY_PUBLIC_KEY_VAL=$(echo "$KEY_PAIR_OUTPUT" | awk -F': ' '/PublicKey:/ {print $2}' | xargs)
 
     if [ -z "$REALITY_UUID_VAL" ] || [ -z "$REALITY_PRIVATE_KEY_VAL" ] || [ -z "$REALITY_PUBLIC_KEY_VAL" ]; then
         error "生成 Reality凭证失败 (UUID, Private Key, 或 Public Key 在解析后为空)."
@@ -409,8 +406,10 @@ generate_reality_credentials() {
     success "Reality UUID: $REALITY_UUID_VAL"
     success "Reality Private Key: $REALITY_PRIVATE_KEY_VAL"
     success "Reality Public Key: $REALITY_PUBLIC_KEY_VAL"
-    TEMP_REALITY_PRIVATE_KEY="$REALITY_PRIVATE_KEY_VAL" 
+    # 全局变量赋值，后续 config.json 和导入链接都用这组
+    LAST_REALITY_UUID="$REALITY_UUID_VAL"
     LAST_REALITY_PUBLIC_KEY="$REALITY_PUBLIC_KEY_VAL"
+    TEMP_REALITY_PRIVATE_KEY="$REALITY_PRIVATE_KEY_VAL"
 }
 
 create_config_json() {
@@ -470,7 +469,7 @@ EOF
             "listen_port": ${reality_port},
             "users": [
                 {
-                    "uuid": "${reality_uuid}",
+                    "uuid": "${LAST_REALITY_UUID}",
                     "flow": "xtls-rprx-vision"
                 }
             ],
@@ -483,7 +482,7 @@ EOF
                         "server": "${reality_sni}",
                         "server_port": 443
                     },
-                    "private_key": "${reality_private_key}",
+                    "private_key": "${TEMP_REALITY_PRIVATE_KEY}",
                     "short_id": ["${LAST_REALITY_SHORT_ID}"]
                 }
             }
