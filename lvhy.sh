@@ -1396,6 +1396,7 @@ modify_node_params() {
                 fi
                 ;;
             0)
+                pause_return_menu
                 break
                 ;;
             *)
