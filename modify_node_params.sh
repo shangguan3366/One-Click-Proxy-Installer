@@ -1,15 +1,37 @@
 #!/bin/bash
-# 引入主脚本变量和函数
-source ./lvhy.sh
+
+# 必要变量
+SINGBOX_CONFIG_FILE="/usr/local/etc/sing-box/config.json"
+PERSISTENT_INFO_FILE="/usr/local/etc/sing-box/.last_singbox_script_info"
+
+success() { echo -e "\033[0;32m[SUCCESS]\033[0m $1"; }
+error() { echo -e "\033[0;31m[ERROR]\033[0m $1"; }
+
+save_persistent_info() {
+    cat > "$PERSISTENT_INFO_FILE" <<EOF
+LAST_HY2_PORT="$LAST_HY2_PORT"
+LAST_HY2_MASQUERADE_CN="$LAST_HY2_MASQUERADE_CN"
+LAST_REALITY_PORT="$LAST_REALITY_PORT"
+LAST_REALITY_UUID="$LAST_REALITY_UUID"
+LAST_REALITY_SNI="$LAST_REALITY_SNI"
+LAST_INSTALL_MODE="$LAST_INSTALL_MODE"
+EOF
+}
+
+# 读取上次参数
+if [ -f "$PERSISTENT_INFO_FILE" ]; then
+    source "$PERSISTENT_INFO_FILE"
+fi
 
 if [ ! -f "$SINGBOX_CONFIG_FILE" ]; then
     error "未检测到配置文件，无法修改参数。"
     read -n 1 -s -r -p "按任意键返回主菜单..."
     exit 1
 fi
+
 while true; do
     clear
-    echo -e "${CYAN}${BOLD}当前节点参数:${NC}"
+    echo -e "当前节点参数:"
     echo "  1. Hysteria2 端口: $LAST_HY2_PORT"
     echo "  2. Hysteria2 伪装域名: $LAST_HY2_MASQUERADE_CN"
     echo "  3. Reality 端口: $LAST_REALITY_PORT"
@@ -98,4 +120,4 @@ while true; do
             ;;
     esac
     read -n 1 -s -r -p "按任意键返回主菜单..."
-done
+done 
