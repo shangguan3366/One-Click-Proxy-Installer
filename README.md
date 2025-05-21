@@ -19,13 +19,13 @@ apt-get update && apt-get install -y curl
 **命令1. 下载脚本到本地：(没有输出提示，我们继续下一条命令！)**
 
 ```bash
-curl -fsSL "https://github.com/shangguancaiyun/One-Click-Proxy-Installer/raw/main/lvhy.sh" -o lvhy.sh ; chmod +x lvhy.sh
+curl -fsSL "https://github.com/shangguancaiyun/One-Click-Proxy-Installer/raw/main/Install.sh" -o lvhy.sh ; chmod +x Install.sh
 ```
 
 **命令2. 再次运行脚本，之后可快捷命令： `box`**
 
 ```bash
-sudo bash lvhy.sh
+sudo bash Install.sh
 ```
 
 脚本将以 root 权限运行，并显示主菜单。
