@@ -32,7 +32,7 @@ EOF
 
 # --- Author Information ---
 AUTHOR_NAME="Zhong Yuan"
-QUICK_CMD_NAME="k"
+QUICK_CMD_NAME="box"
 
 # --- 统计信息初始化 ---
 update_run_stats
@@ -370,8 +370,8 @@ generate_reality_credentials() {
         fi
     fi
     info "使用命令 '$SINGBOX_CMD' 生成 Reality UUID 和 Keypair..."
-    
-    info "执行: $SINGBOX_CMD generate uuid"
+
+    # 只生成一次 UUID
     REALITY_UUID_VAL=$($SINGBOX_CMD generate uuid)
     CMD_EXIT_CODE=$?
     if [ $CMD_EXIT_CODE -ne 0 ] || [ -z "$REALITY_UUID_VAL" ]; then
@@ -382,7 +382,7 @@ generate_reality_credentials() {
     info "生成的 UUID: $REALITY_UUID_VAL"
     LAST_REALITY_UUID="$REALITY_UUID_VAL"
 
-    info "执行: $SINGBOX_CMD generate reality-keypair"
+    # 只生成一次 Reality 密钥对
     KEY_PAIR_OUTPUT=$($SINGBOX_CMD generate reality-keypair)
     CMD_EXIT_CODE=$?
     if [ $CMD_EXIT_CODE -ne 0 ] || [ -z "$KEY_PAIR_OUTPUT" ]; then
@@ -392,12 +392,9 @@ generate_reality_credentials() {
     fi
     info "原始 Keypair 输出:"
     echo "$KEY_PAIR_OUTPUT"
-    
-    REALITY_PRIVATE_KEY_VAL=$(echo "$KEY_PAIR_OUTPUT" | awk -F': ' '/PrivateKey:/ {print $2}')
-    REALITY_PUBLIC_KEY_VAL=$(echo "$KEY_PAIR_OUTPUT" | awk -F': ' '/PublicKey:/ {print $2}')
-    
-    REALITY_PRIVATE_KEY_VAL=$(echo "${REALITY_PRIVATE_KEY_VAL}" | xargs)
-    REALITY_PUBLIC_KEY_VAL=$(echo "${REALITY_PUBLIC_KEY_VAL}" | xargs)
+
+    REALITY_PRIVATE_KEY_VAL=$(echo "$KEY_PAIR_OUTPUT" | awk -F': ' '/PrivateKey:/ {print $2}' | xargs)
+    REALITY_PUBLIC_KEY_VAL=$(echo "$KEY_PAIR_OUTPUT" | awk -F': ' '/PublicKey:/ {print $2}' | xargs)
 
     if [ -z "$REALITY_UUID_VAL" ] || [ -z "$REALITY_PRIVATE_KEY_VAL" ] || [ -z "$REALITY_PUBLIC_KEY_VAL" ]; then
         error "生成 Reality凭证失败 (UUID, Private Key, 或 Public Key 在解析后为空)."
@@ -409,8 +406,10 @@ generate_reality_credentials() {
     success "Reality UUID: $REALITY_UUID_VAL"
     success "Reality Private Key: $REALITY_PRIVATE_KEY_VAL"
     success "Reality Public Key: $REALITY_PUBLIC_KEY_VAL"
-    TEMP_REALITY_PRIVATE_KEY="$REALITY_PRIVATE_KEY_VAL" 
+    # 全局变量赋值，后续 config.json 和导入链接都用这组
+    LAST_REALITY_UUID="$REALITY_UUID_VAL"
     LAST_REALITY_PUBLIC_KEY="$REALITY_PUBLIC_KEY_VAL"
+    TEMP_REALITY_PRIVATE_KEY="$REALITY_PRIVATE_KEY_VAL"
 }
 
 create_config_json() {
@@ -470,7 +469,7 @@ EOF
             "listen_port": ${reality_port},
             "users": [
                 {
-                    "uuid": "${reality_uuid}",
+                    "uuid": "${LAST_REALITY_UUID}",
                     "flow": "xtls-rprx-vision"
                 }
             ],
@@ -483,10 +482,8 @@ EOF
                         "server": "${reality_sni}",
                         "server_port": 443
                     },
-                    "private_key": "${reality_private_key}",
-                    "short_id": [
-                        "${LAST_REALITY_SHORT_ID}"
-                    ]
+                    "private_key": "${TEMP_REALITY_PRIVATE_KEY}",
+                    "short_id": ["${LAST_REALITY_SHORT_ID}"]
                 }
             }
         }
@@ -644,7 +641,7 @@ display_and_store_config_info() {
         echo -e "${MAGENTA}${BOLD}--------------------------------------------${NC}"
     fi
     if [ "$mode" == "all" ] || [ "$mode" == "reality" ]; then
-        LAST_VLESS_LINK="vless://${LAST_REALITY_UUID}@${ip_formatted}:${LAST_REALITY_PORT}?encryption=none&security=reality&sni=${LAST_REALITY_SNI}&fp=chrome&pbk=${LAST_REALITY_PUBLIC_KEY}&sid=${LAST_REALITY_SHORT_ID}#Reality-${LAST_SERVER_IP}-$(date +%s)"
+        LAST_VLESS_LINK="vless://${LAST_REALITY_UUID}@${ip_formatted}:${LAST_REALITY_PORT}?encryption=none&security=reality&sni=${LAST_REALITY_SNI}&fp=chrome&pbk=${LAST_REALITY_PUBLIC_KEY}&sid=${LAST_REALITY_SHORT_ID}&flow=xtls-rprx-vision#Reality-${LAST_SERVER_IP}-$(date +%s)"
         echo -e "${GREEN}${BOLD} Reality (VLESS) 配置信息:${NC}"
         echo -e "服务器地址: ${GREEN}${LAST_SERVER_IP}${NC}"
         echo -e "端口: ${GREEN}${LAST_REALITY_PORT}${NC}"
@@ -1243,16 +1240,17 @@ show_menu() {
     echo "  8. 查看 Sing-box 实时日志"
     echo "  9. 查看当前配置文件"
     echo " 10. 编辑当前配置文件 (nano/vim)"
-    echo " 11. 显示"节点"的导入信息 (含二维码)"
+    echo " 11. 显示\"节点\"的导入信息 (含二维码)"
+    echo " 12. 修改节点参数（端口/IP/UUID等）"
     echo -e "${MAGENTA}${BOLD}=================【工具箱】====================${NC}"
-    echo " 12. 工具箱"
+    echo " 13. 工具箱"
     echo -e "${MAGENTA}${BOLD}=================【其他】======================${NC}"
-    echo " 13. 卸载 Sing-box"
-    echo " 14. 更改快捷指令"
-    echo " 15. 在线更新脚本"
+    echo " 14. 卸载 Sing-box"
+    echo " 15. 更改快捷指令"
+    echo " 16. 在线更新脚本"
     echo "  0. 退出脚本"
     echo -e "${MAGENTA}${BOLD}===============================================${NC}"
-    read -p "请输入选项 [0-15]: " choice
+    read -p "请输入选项 [0-16]: " choice
 
     case "$choice" in
         1) install_hysteria2_reality ;;
@@ -1266,12 +1264,26 @@ show_menu() {
         9) manage_singbox "view_config" ;;
         10) manage_singbox "edit_config" ;;
         11) show_current_import_info ;;
-        12) toolbox_menu ;;
-        13) uninstall_singbox ;;
-        14) change_quick_cmd ;;
-        15) update_script_online ;;
+        12)
+            echo "DEBUG: SINGBOX_CONFIG_FILE=[$SINGBOX_CONFIG_FILE]"
+            if [ -f "$SINGBOX_CONFIG_FILE" ]; then
+                echo "DEBUG: config file exists"
+            else
+                echo "DEBUG: config file NOT exists"
+            fi
+            if [ ! -f "$SINGBOX_CONFIG_FILE" ]; then
+                error "未检测到配置文件（$SINGBOX_CONFIG_FILE），请先通过主菜单 1/2/3 完成节点安装。"
+                pause_return_menu
+            else
+                modify_node_params
+            fi
+            ;;
+        13) toolbox_menu ;;
+        14) uninstall_singbox ;;
+        15) change_quick_cmd ;;
+        16) update_script_online ;;
         0) exit 0 ;;
-        *) error "无效选项，请输入 0 到 15 之间的数字。" ;;
+        *) error "无效选项，请输入 0 到 16 之间的数字。" ;;
     esac
     echo "" 
 }
@@ -1291,11 +1303,109 @@ done
 
 # --- 脚本末尾自动化一键设置快捷命令功能 ---
 if [ "$(basename $0)" != "$QUICK_CMD_NAME" ] && [ ! -f "/usr/local/bin/$QUICK_CMD_NAME" ]; then
-    echo "\n检测到你还没有设置快捷命令，是否添加？"
-    read -p "输入 y 添加快捷命令 $QUICK_CMD_NAME，输入 n 跳过 [y/n]: " quick_choice
-    if [[ "$quick_choice" =~ ^[Yy]$ ]]; then
-        sudo cp "$0" "/usr/local/bin/$QUICK_CMD_NAME"
-        sudo chmod +x "/usr/local/bin/$QUICK_CMD_NAME"
-        echo "\n现在你可以直接输入 $QUICK_CMD_NAME 快速管理 Sing-Box 节点了！"
-    fi
+    sudo cp "$0" "/usr/local/bin/$QUICK_CMD_NAME"
+    sudo chmod +x "/usr/local/bin/$QUICK_CMD_NAME"
+    echo "\n已自动设置快捷命令：box。你可以在任意目录输入 box 快速管理 Sing-Box 节点！"
 fi
+
+# --- 参数便捷修改与节点删除功能 ---
+modify_node_params() {
+    if [ ! -f "$SINGBOX_CONFIG_FILE" ]; then
+        error "未检测到配置文件，无法修改参数。"
+        pause_return_menu
+        return
+    fi
+
+    while true; do
+        clear
+        echo -e "${CYAN}${BOLD}当前节点参数:${NC}"
+        echo "  1. Hysteria2 端口: $LAST_HY2_PORT"
+        echo "  2. Hysteria2 伪装域名: $LAST_HY2_MASQUERADE_CN"
+        echo "  3. Reality 端口: $LAST_REALITY_PORT"
+        echo "  4. Reality UUID: $LAST_REALITY_UUID"
+        echo "  5. Reality SNI: $LAST_REALITY_SNI"
+        echo "  6. 删除当前节点（清空配置）"
+        echo "  0. 返回主菜单"
+        read -p "请选择要操作的项目 [0-6]: " param_choice
+        case "$param_choice" in
+            1)
+                read -p "请输入新的 Hysteria2 端口: " new_port
+                if [[ -n "$new_port" ]]; then
+                    sed -i "s/\"listen_port\": $LAST_HY2_PORT/\"listen_port\": $new_port/" "$SINGBOX_CONFIG_FILE"
+                    LAST_HY2_PORT="$new_port"
+                    save_persistent_info
+                    systemctl restart sing-box
+                    success "Hysteria2 端口已修改并重启服务。"
+                fi
+                ;;
+            2)
+                read -p "请输入新的 Hysteria2 伪装域名: " new_cn
+                if [[ -n "$new_cn" ]]; then
+                    sed -i "s/\"server_name\": \"$LAST_HY2_MASQUERADE_CN\"/\"server_name\": \"$new_cn\"/" "$SINGBOX_CONFIG_FILE"
+                    LAST_HY2_MASQUERADE_CN="$new_cn"
+                    save_persistent_info
+                    systemctl restart sing-box
+                    success "Hysteria2 伪装域名已修改并重启服务。"
+                fi
+                ;;
+            3)
+                read -p "请输入新的 Reality 端口: " new_port
+                if [[ -n "$new_port" ]]; then
+                    sed -i "s/\"listen_port\": $LAST_REALITY_PORT/\"listen_port\": $new_port/" "$SINGBOX_CONFIG_FILE"
+                    LAST_REALITY_PORT="$new_port"
+                    save_persistent_info
+                    systemctl restart sing-box
+                    success "Reality 端口已修改并重启服务。"
+                fi
+                ;;
+            4)
+                read -p "请输入新的 Reality UUID: " new_uuid
+                if [[ -n "$new_uuid" ]]; then
+                    sed -i "s/\"uuid\": \"$LAST_REALITY_UUID\"/\"uuid\": \"$new_uuid\"/" "$SINGBOX_CONFIG_FILE"
+                    LAST_REALITY_UUID="$new_uuid"
+                    save_persistent_info
+                    systemctl restart sing-box
+                    success "Reality UUID已修改并重启服务。"
+                fi
+                ;;
+            5)
+                read -p "请输入新的 Reality SNI: " new_sni
+                if [[ -n "$new_sni" ]]; then
+                    sed -i "s/\"server_name\": \"$LAST_REALITY_SNI\"/\"server_name\": \"$new_sni\"/" "$SINGBOX_CONFIG_FILE"
+                    LAST_REALITY_SNI="$new_sni"
+                    save_persistent_info
+                    systemctl restart sing-box
+                    success "Reality SNI已修改并重启服务。"
+                fi
+                ;;
+            6)
+                read -p "确定要删除当前节点配置吗？此操作不可恢复！(y/N): " del_confirm
+                if [[ "$del_confirm" =~ ^[Yy]$ ]]; then
+                    rm -f "$SINGBOX_CONFIG_FILE"
+                    rm -f "$PERSISTENT_INFO_FILE"
+                    systemctl stop sing-box
+                    LAST_HY2_PORT=""
+                    LAST_HY2_MASQUERADE_CN=""
+                    LAST_REALITY_PORT=""
+                    LAST_REALITY_UUID=""
+                    LAST_REALITY_SNI=""
+                    LAST_INSTALL_MODE=""
+                    success "节点配置已删除，Sing-box 服务已停止。"
+                    pause_return_menu
+                    break
+                else
+                    echo "操作已取消。"
+                    pause_return_menu
+                fi
+                ;;
+            0)
+                pause_return_menu
+                break
+                ;;
+            *)
+                echo "无效选项。"
+                ;;
+        esac
+        pause_return_menu
+    done
+}
