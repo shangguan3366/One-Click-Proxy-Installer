@@ -1250,7 +1250,6 @@ show_menu() {
     echo " 13. 卸载 Sing-box"
     echo " 14. 更改快捷指令"
     echo " 15. 在线更新脚本"
-    echo "  0. 退出脚本"
     echo -e "${MAGENTA}${BOLD}===============================================${NC}"
     read -p "请输入选项 [0-15]: " choice
 
@@ -1295,3 +1294,69 @@ if [ "$(basename $0)" != "$QUICK_CMD_NAME" ] && [ ! -f "/usr/local/bin/$QUICK_CM
     sudo chmod +x "/usr/local/bin/$QUICK_CMD_NAME"
     echo "\n已自动设置快捷命令：box。你可以在任意目录输入 box 快速管理 Sing-Box 节点！"
 fi
+
+# 在节点管理菜单增加选项
+node_menu() {
+    clear
+    echo -e "${CYAN}${BOLD}------ 节点管理 ------${NC}"
+    echo -e "1. 添加节点"
+    echo -e "2. 删除节点"
+    echo -e "3. 查看节点"
+    echo -e "4. 批量导入节点"
+    echo -e "5. 批量导出节点"
+    echo -e "6. 显示节点二维码"
+    echo -e "7. 返回主菜单"
+    echo -e "8. 修改节点端口/导出IP"
+    echo -e "${CYAN}${BOLD}----------------------${NC}"
+    read -rp "请选择 [1-8]: " node_num
+    case $node_num in
+        1) add_node ;;
+        2) del_node ;;
+        3) list_node ;;
+        4) import_node ;;
+        5) export_node ;;
+        6) show_qr ;;
+        7) main_menu ;;
+        8) edit_node_port_ip ;;
+        *) echo -e "${RED}无效输入！${NC}"; sleep 1; node_menu ;;
+    esac
+}
+
+# 新增节点端口/IP修改功能
+edit_node_port_ip() {
+    nodes=$(read_nodes)
+    count=$(echo "$nodes" | jq 'length')
+    if [ "$count" -eq 0 ]; then
+        echo -e "${YELLOW}暂无节点。${NC}"
+        pause_return_menu node_menu
+        return
+    fi
+    echo -e "${GREEN}现有节点列表：${NC}"
+    for i in $(seq 0 $((count-1))); do
+        n=$(echo "$nodes" | jq ".[$i]")
+        name=$(echo "$n" | jq -r .name)
+        proto=$(echo "$n" | jq -r .proto)
+        port=$(echo "$n" | jq -r .port)
+        echo "$((i+1)). $name [$proto] 端口:$port"
+    done
+    read -rp "请输入要修改的节点序号（0返回）: " idx
+    if [ "$idx" = "0" ]; then node_menu; return; fi
+    if ! [[ "$idx" =~ ^[0-9]+$ ]] || [ "$idx" -lt 1 ] || [ "$idx" -gt "$count" ]; then
+        echo -e "${RED}输入无效！${NC}"; sleep 1; edit_node_port_ip; return
+    fi
+    old_port=$(echo "$nodes" | jq -r ".[$((idx-1))].port")
+    read -rp "新端口（回车默认$old_port）: " new_port
+    [ -z "$new_port" ] && new_port="$old_port"
+    # 修改端口
+    nodes=$(echo "$nodes" | jq ".[$((idx-1))].port = \"$new_port\"")
+    # 修改导出IP
+    read -rp "当前导出IP为 $LAST_SERVER_IP，输入新导出IP（回车默认不变）: " new_ip
+    if [ -n "$new_ip" ]; then
+        export LAST_SERVER_IP="$new_ip"
+        save_persistent_info
+    fi
+    save_nodes "$nodes"
+    update_config_and_restart
+    echo -e "${GREEN}节点端口/导出IP已修改。${NC}"
+    pause_return_menu node_menu
+}
