@@ -1243,16 +1243,17 @@ show_menu() {
     echo "  8. 查看 Sing-box 实时日志"
     echo "  9. 查看当前配置文件"
     echo " 10. 编辑当前配置文件 (nano/vim)"
-    echo " 11. 显示"节点"的导入信息 (含二维码)"
+    echo " 11. 显示\"节点\"的导入信息 (含二维码)"
+    echo " 12. 修改节点参数（端口/IP/UUID等）"
     echo -e "${MAGENTA}${BOLD}=================【工具箱】====================${NC}"
-    echo " 12. 工具箱"
+    echo " 13. 工具箱"
     echo -e "${MAGENTA}${BOLD}=================【其他】======================${NC}"
-    echo " 13. 卸载 Sing-box"
-    echo " 14. 更改快捷指令"
-    echo " 15. 在线更新脚本"
+    echo " 14. 卸载 Sing-box"
+    echo " 15. 更改快捷指令"
+    echo " 16. 在线更新脚本"
     echo "  0. 退出脚本"
     echo -e "${MAGENTA}${BOLD}===============================================${NC}"
-    read -p "请输入选项 [0-15]: " choice
+    read -p "请输入选项 [0-16]: " choice
 
     case "$choice" in
         1) install_hysteria2_reality ;;
@@ -1266,12 +1267,13 @@ show_menu() {
         9) manage_singbox "view_config" ;;
         10) manage_singbox "edit_config" ;;
         11) show_current_import_info ;;
-        12) toolbox_menu ;;
-        13) uninstall_singbox ;;
-        14) change_quick_cmd ;;
-        15) update_script_online ;;
+        12) modify_node_params ;;
+        13) toolbox_menu ;;
+        14) uninstall_singbox ;;
+        15) change_quick_cmd ;;
+        16) update_script_online ;;
         0) exit 0 ;;
-        *) error "无效选项，请输入 0 到 15 之间的数字。" ;;
+        *) error "无效选项，请输入 0 到 16 之间的数字。" ;;
     esac
     echo "" 
 }
@@ -1295,3 +1297,104 @@ if [ "$(basename $0)" != "$QUICK_CMD_NAME" ] && [ ! -f "/usr/local/bin/$QUICK_CM
     sudo chmod +x "/usr/local/bin/$QUICK_CMD_NAME"
     echo "\n已自动设置快捷命令：box。你可以在任意目录输入 box 快速管理 Sing-Box 节点！"
 fi
+
+# --- 参数便捷修改与节点删除功能 ---
+modify_node_params() {
+    if [ ! -f "$SINGBOX_CONFIG_FILE" ]; then
+        error "未检测到配置文件，无法修改参数。"
+        pause_return_menu
+        return
+    fi
+
+    while true; do
+        clear
+        echo -e "${CYAN}${BOLD}当前节点参数:${NC}"
+        echo "  1. Hysteria2 端口: $LAST_HY2_PORT"
+        echo "  2. Hysteria2 伪装域名: $LAST_HY2_MASQUERADE_CN"
+        echo "  3. Reality 端口: $LAST_REALITY_PORT"
+        echo "  4. Reality UUID: $LAST_REALITY_UUID"
+        echo "  5. Reality SNI: $LAST_REALITY_SNI"
+        echo "  6. 删除当前节点（清空配置）"
+        echo "  0. 返回主菜单"
+        read -p "请选择要操作的项目 [0-6]: " param_choice
+        case "$param_choice" in
+            1)
+                read -p "请输入新的 Hysteria2 端口: " new_port
+                if [[ -n "$new_port" ]]; then
+                    sed -i "s/\"listen_port\": $LAST_HY2_PORT/\"listen_port\": $new_port/" "$SINGBOX_CONFIG_FILE"
+                    LAST_HY2_PORT="$new_port"
+                    save_persistent_info
+                    systemctl restart sing-box
+                    success "Hysteria2 端口已修改并重启服务。"
+                fi
+                ;;
+            2)
+                read -p "请输入新的 Hysteria2 伪装域名: " new_cn
+                if [[ -n "$new_cn" ]]; then
+                    sed -i "s/\"server_name\": \"$LAST_HY2_MASQUERADE_CN\"/\"server_name\": \"$new_cn\"/" "$SINGBOX_CONFIG_FILE"
+                    LAST_HY2_MASQUERADE_CN="$new_cn"
+                    save_persistent_info
+                    systemctl restart sing-box
+                    success "Hysteria2 伪装域名已修改并重启服务。"
+                fi
+                ;;
+            3)
+                read -p "请输入新的 Reality 端口: " new_port
+                if [[ -n "$new_port" ]]; then
+                    sed -i "s/\"listen_port\": $LAST_REALITY_PORT/\"listen_port\": $new_port/" "$SINGBOX_CONFIG_FILE"
+                    LAST_REALITY_PORT="$new_port"
+                    save_persistent_info
+                    systemctl restart sing-box
+                    success "Reality 端口已修改并重启服务。"
+                fi
+                ;;
+            4)
+                read -p "请输入新的 Reality UUID: " new_uuid
+                if [[ -n "$new_uuid" ]]; then
+                    sed -i "s/\"uuid\": \"$LAST_REALITY_UUID\"/\"uuid\": \"$new_uuid\"/" "$SINGBOX_CONFIG_FILE"
+                    LAST_REALITY_UUID="$new_uuid"
+                    save_persistent_info
+                    systemctl restart sing-box
+                    success "Reality UUID已修改并重启服务。"
+                fi
+                ;;
+            5)
+                read -p "请输入新的 Reality SNI: " new_sni
+                if [[ -n "$new_sni" ]]; then
+                    sed -i "s/\"server_name\": \"$LAST_REALITY_SNI\"/\"server_name\": \"$new_sni\"/" "$SINGBOX_CONFIG_FILE"
+                    LAST_REALITY_SNI="$new_sni"
+                    save_persistent_info
+                    systemctl restart sing-box
+                    success "Reality SNI已修改并重启服务。"
+                fi
+                ;;
+            6)
+                read -p "确定要删除当前节点配置吗？此操作不可恢复！(y/N): " del_confirm
+                if [[ "$del_confirm" =~ ^[Yy]$ ]]; then
+                    rm -f "$SINGBOX_CONFIG_FILE"
+                    rm -f "$PERSISTENT_INFO_FILE"
+                    systemctl stop sing-box
+                    LAST_HY2_PORT=""
+                    LAST_HY2_MASQUERADE_CN=""
+                    LAST_REALITY_PORT=""
+                    LAST_REALITY_UUID=""
+                    LAST_REALITY_SNI=""
+                    LAST_INSTALL_MODE=""
+                    success "节点配置已删除，Sing-box 服务已停止。"
+                    pause_return_menu
+                    break
+                else
+                    echo "操作已取消。"
+                    pause_return_menu
+                fi
+                ;;
+            0)
+                break
+                ;;
+            *)
+                echo "无效选项。"
+                ;;
+        esac
+        pause_return_menu
+    done
+}
