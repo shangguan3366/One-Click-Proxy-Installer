@@ -16,7 +16,7 @@
 ```bash
 apt-get update && apt-get install -y curl
 ```
-**命令1. 下载脚本到本地：(此命令没有输出提示，运行完继续下一条命令！)**
+**命令1. 下载脚本到服务器：(此命令没有输出提示，运行完继续下一条命令！)**
 
 ```bash
 curl -fsSL "https://github.com/shangguancaiyun/One-Click-Proxy-Installer/raw/main/install.sh" -o install.sh ; chmod +x install.sh
