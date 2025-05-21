@@ -1305,8 +1305,8 @@ node_menu() {
     echo -e "4. 批量导入节点"
     echo -e "5. 批量导出节点"
     echo -e "6. 显示节点二维码"
-    echo -e "7. 返回主菜单"
-    echo -e "8. 修改节点端口/导出IP"
+    echo -e "7. 修改节点端口/导出IP"
+    echo -e "8. 返回主菜单"
     echo -e "${CYAN}${BOLD}----------------------${NC}"
     read -rp "请选择 [1-8]: " node_num
     case $node_num in
@@ -1316,8 +1316,8 @@ node_menu() {
         4) import_node ;;
         5) export_node ;;
         6) show_qr ;;
-        7) main_menu ;;
-        8) edit_node_port_ip ;;
+        7) edit_node_port_ip ;;
+        8) main_menu ;;
         *) echo -e "${RED}无效输入！${NC}"; sleep 1; node_menu ;;
     esac
 }
