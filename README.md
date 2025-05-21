@@ -124,6 +124,10 @@ bash <(curl -sL kejilion.sh)#建议快捷命令改为 i
 
 - 服务器推荐：[akile](https://akile.io/register?aff_code=99532291-0323-491e-bdd7-fbcfebbd1fa5)
 
+
+- 实用网站推荐：
+[自建影视](https://053312d1.libretv-edb.pages.dev/)
+
 ---
 
 ## VPS仅IPV6/IPV4 脚本推荐
