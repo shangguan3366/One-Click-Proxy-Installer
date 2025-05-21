@@ -641,7 +641,7 @@ display_and_store_config_info() {
         echo -e "${MAGENTA}${BOLD}--------------------------------------------${NC}"
     fi
     if [ "$mode" == "all" ] || [ "$mode" == "reality" ]; then
-        LAST_VLESS_LINK="vless://${LAST_REALITY_UUID}@${ip_formatted}:${LAST_REALITY_PORT}?encryption=none&security=reality&sni=${LAST_REALITY_SNI}&fp=chrome&pbk=${LAST_REALITY_PUBLIC_KEY}&sid=${LAST_REALITY_SHORT_ID}#Reality-${LAST_SERVER_IP}-$(date +%s)"
+        LAST_VLESS_LINK="vless://${LAST_REALITY_UUID}@${ip_formatted}:${LAST_REALITY_PORT}?encryption=none&security=reality&sni=${LAST_REALITY_SNI}&fp=chrome&pbk=${LAST_REALITY_PUBLIC_KEY}&sid=${LAST_REALITY_SHORT_ID}&flow=xtls-rprx-vision#Reality-${LAST_SERVER_IP}-$(date +%s)"
         echo -e "${GREEN}${BOLD} Reality (VLESS) 配置信息:${NC}"
         echo -e "服务器地址: ${GREEN}${LAST_SERVER_IP}${NC}"
         echo -e "端口: ${GREEN}${LAST_REALITY_PORT}${NC}"
