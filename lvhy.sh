@@ -91,7 +91,8 @@ NC='\033[0m' # 无颜色
 # --- 通用暂停函数 ---
 pause_return_menu() {
     echo
-    read -p "输入0返回首页，或按任意键继续..." back_choice
+    read -n 1 -s -r -p "按任意键返回..."
+    echo
 }
 
 # --- 辅助函数 ---
