@@ -1,3 +1,493 @@
+#!/bin/bash
+
+# Script for Sing-Box Hysteria2 & Reality Management
+
+# --- 统计信息文件 ---
+STATS_FILE="$HOME/.oneclick_stats"
+
+# --- 统计函数 ---
+update_run_stats() {
+    local today total today_str
+    today_str=$(date +%Y-%m-%d)
+    if [ -f "$STATS_FILE" ]; then
+        source "$STATS_FILE"
+    else
+        RUN_TOTAL=0
+        RUN_TODAY=0
+        RUN_TODAY_DATE="$today_str"
+    fi
+    if [ "$RUN_TODAY_DATE" = "$today_str" ]; then
+        RUN_TODAY=$((RUN_TODAY+1))
+    else
+        RUN_TODAY=1
+        RUN_TODAY_DATE="$today_str"
+    fi
+    RUN_TOTAL=$((RUN_TOTAL+1))
+    cat > "$STATS_FILE" <<EOF
+RUN_TOTAL=$RUN_TOTAL
+RUN_TODAY=$RUN_TODAY
+RUN_TODAY_DATE="$RUN_TODAY_DATE"
+EOF
+}
+
+# --- Author Information ---
+AUTHOR_NAME="Zhong Yuan"
+QUICK_CMD_NAME="box"
+
+# --- 统计信息初始化 ---
+update_run_stats
+if [ -f "$STATS_FILE" ]; then
+    source "$STATS_FILE"
+fi
+
+# --- Configuration ---
+SINGBOX_INSTALL_PATH_EXPECTED="/usr/local/bin/sing-box"
+SINGBOX_CONFIG_DIR="/usr/local/etc/sing-box"
+SINGBOX_CONFIG_FILE="${SINGBOX_CONFIG_DIR}/config.json"
+SINGBOX_SERVICE_FILE="/etc/systemd/system/sing-box.service"
+
+HYSTERIA_CERT_DIR="/etc/hysteria" # 针对自签名证书
+HYSTERIA_CERT_KEY="${HYSTERIA_CERT_DIR}/private.key"
+HYSTERIA_CERT_PEM="${HYSTERIA_CERT_DIR}/cert.pem"
+
+# 用于持久存储上次配置信息的文件
+PERSISTENT_INFO_FILE="${SINGBOX_CONFIG_DIR}/.last_singbox_script_info"
+
+# 默认值
+DEFAULT_HYSTERIA_PORT="8443"
+DEFAULT_REALITY_PORT="443"
+DEFAULT_HYSTERIA_MASQUERADE_CN="bing.com"
+DEFAULT_REALITY_SNI="www.tesla.com"
+
+# 全局 SINGBOX_CMD
+SINGBOX_CMD=""
+
+# 全局变量，用于存储上次生成的配置信息 (将从文件加载)
+LAST_SERVER_IP=""
+LAST_HY2_PORT=""
+LAST_HY2_PASSWORD=""
+LAST_HY2_MASQUERADE_CN=""
+LAST_HY2_LINK=""
+LAST_REALITY_PORT=""
+LAST_REALITY_UUID=""
+LAST_REALITY_PUBLIC_KEY="" # 公钥需要显示
+LAST_REALITY_SNI=""
+LAST_REALITY_SHORT_ID="0123456789abcdef" # 默认值
+LAST_REALITY_FINGERPRINT="chrome"    # 默认值
+LAST_VLESS_LINK=""
+LAST_INSTALL_MODE="" # "all", "hysteria2", "reality", 或 ""
+
+# --- 颜色定义 ---
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+MAGENTA='\033[0;35m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+UNDERLINE='\033[4m'
+NC='\033[0m' # 无颜色
+
+# --- 通用暂停函数 ---
+pause_return_menu() {
+    echo
+    read -p "输入0返回首页，或按任意键继续..." back_choice
+}
+
+# --- 辅助函数 ---
+info() { echo -e "${BLUE}[INFO]${NC} $1"; }
+warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
+error() { echo -e "${RED}[ERROR]${NC} $1"; }
+success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
+
+print_author_info() {
+    echo -e "${MAGENTA}${BOLD}================================================${NC}"
+    echo -e "${BOLD}${YELLOW} 项目名称: One-Click-Proxy-Installer ${NC}"
+    echo -e "${MAGENTA}${BOLD}================================================${NC}"
+    echo -e "${CYAN}${BOLD} Sing-Box Hysteria2 & Reality 管理脚本 ${NC}"
+    echo -e "${MAGENTA}${BOLD}================================================${NC}"
+    echo -e " ${YELLOW}作者:${NC}      ${GREEN}${AUTHOR_NAME}${NC}"
+    echo -e " ${YELLOW}快捷启动指令:${NC} ${GREEN}${QUICK_CMD_NAME}${NC} (全局输入即可快速启动本脚本)"
+    echo -e " ${YELLOW}今日运行次数:${NC} ${GREEN}${RUN_TODAY}${NC}   ${YELLOW}总运行次数:${NC} ${GREEN}${RUN_TOTAL}${NC}"
+    echo -e "${MAGENTA}${BOLD}================================================${NC}"
+}
+
+change_quick_cmd() {
+    # 检查脚本是否为真实文件
+    if [ ! -f "$0" ]; then
+        echo "当前脚本不是本地文件，无法设置快捷指令。"
+        echo "请用 bash /root/lvhy.sh 方式运行本脚本后再设置快捷指令。"
+        read -n 1 -s -r -p "按任意键返回主菜单..."
+        echo
+        return
+    fi
+    read -p "请输入你想要设置的新快捷指令（如 sbox）:" new_cmd
+    if [[ -z "$new_cmd" ]]; then
+        echo "未输入，操作取消。"
+        return
+    fi
+    if [ "$new_cmd" = "lvhy.sh" ]; then
+        echo "不能与脚本本身同名。"
+        return
+    fi
+    sudo cp "$0" "/usr/local/bin/$new_cmd"
+    sudo chmod +x "/usr/local/bin/$new_cmd"
+    export QUICK_CMD_NAME="$new_cmd"
+    sed -i "s/^QUICK_CMD_NAME=.*/QUICK_CMD_NAME=\"$new_cmd\"/" "$0"
+    echo "快捷指令已设置为：$new_cmd。你可以在任意目录输入 $new_cmd 快速启动本脚本。"
+}
+
+load_persistent_info() {
+    if [ -f "$PERSISTENT_INFO_FILE" ]; then
+        info "加载上次保存的配置信息从: $PERSISTENT_INFO_FILE"
+        source "$PERSISTENT_INFO_FILE"
+        success "配置信息加载完成。"
+    else
+        info "未找到持久化的配置信息文件。"
+    fi
+}
+
+save_persistent_info() {
+    info "正在保存当前配置信息到: $PERSISTENT_INFO_FILE"
+    mkdir -p "$(dirname "$PERSISTENT_INFO_FILE")"
+    cat > "$PERSISTENT_INFO_FILE" <<EOF
+LAST_SERVER_IP="${LAST_SERVER_IP}"
+LAST_HY2_PORT="${LAST_HY2_PORT}"
+LAST_HY2_PASSWORD="${LAST_HY2_PASSWORD}"
+LAST_HY2_MASQUERADE_CN="${LAST_HY2_MASQUERADE_CN}"
+LAST_HY2_LINK="${LAST_HY2_LINK}"
+LAST_REALITY_PORT="${LAST_REALITY_PORT}"
+LAST_REALITY_UUID="${LAST_REALITY_UUID}"
+LAST_REALITY_PUBLIC_KEY="${LAST_REALITY_PUBLIC_KEY}"
+LAST_REALITY_SNI="${LAST_REALITY_SNI}"
+LAST_REALITY_SHORT_ID="${LAST_REALITY_SHORT_ID}"
+LAST_REALITY_FINGERPRINT="${LAST_REALITY_FINGERPRINT}"
+LAST_VLESS_LINK="${LAST_VLESS_LINK}"
+LAST_INSTALL_MODE="${LAST_INSTALL_MODE}"
+EOF
+    if [ $? -eq 0 ]; then
+        success "配置信息保存成功。"
+    else
+        error "配置信息保存失败。"
+    fi
+}
+
+
+check_root() {
+    if [ "$(id -u)" -ne 0 ]; then
+        error "此脚本需要以 root 权限运行。请使用 'sudo bash $0'"
+        exit 1
+    fi
+}
+
+attempt_install_package() {
+    local package_name="$1"
+    local friendly_name="${2:-$package_name}"
+
+    if command -v "$package_name" &>/dev/null; then
+        return 0
+    fi
+
+    read -p "依赖 '${friendly_name}' 未安装。是否尝试自动安装? (y/N): " install_confirm
+    if [[ ! "$install_confirm" =~ ^[Yy]$ ]]; then
+        warn "跳过安装 '${friendly_name}'。某些功能可能因此不可用或显示不完整。"
+        return 1
+    fi
+
+    info "正在尝试安装 '${friendly_name}'..."
+    if command -v apt-get &>/dev/null; then
+        apt-get update -y && apt-get install -y "$package_name"
+    elif command -v yum &>/dev/null; then
+        yum install -y "$package_name"
+    elif command -v dnf &>/dev/null; then
+        dnf install -y "$package_name"
+    else
+        error "未找到已知的包管理器 (apt, yum, dnf)。请手动安装 '${friendly_name}'。"
+        return 1
+    fi
+
+    if command -v "$package_name" &>/dev/null; then
+        success "'${friendly_name}' 安装成功。"
+        return 0
+    else
+        error "'${friendly_name}' 安装失败。请检查错误信息并尝试手动安装。"
+        return 1
+    fi
+}
+
+
+check_dependencies() {
+    info "检查核心依赖..."
+    # 从 core_deps 数组中移除了 "jq"
+    local core_deps=("curl" "openssl")
+    local all_deps_met=true
+    for dep in "${core_deps[@]}"; do
+        if ! command -v "$dep" &>/dev/null; then
+            if ! attempt_install_package "$dep"; then
+                all_deps_met=false
+            fi
+        fi
+    done
+
+    if ! $all_deps_met; then
+        error "部分核心依赖未能安装。脚本可能无法正常运行。请手动安装后重试。"
+        exit 1
+    fi
+    success "核心依赖检查通过。"
+}
+
+check_and_prepare_qrencode() {
+    if ! command -v qrencode &>/dev/null; then
+        if attempt_install_package "qrencode" "二维码生成工具(qrencode)"; then
+            return 0
+        else
+            warn "未安装 'qrencode'。将无法生成二维码。"
+            return 1
+        fi
+    fi
+    return 0
+}
+
+
+find_and_set_singbox_cmd() {
+    if [ -x "$SINGBOX_INSTALL_PATH_EXPECTED" ]; then
+        SINGBOX_CMD="$SINGBOX_INSTALL_PATH_EXPECTED"
+    elif command -v sing-box &>/dev/null; then
+        SINGBOX_CMD=$(command -v sing-box)
+    else
+        SINGBOX_CMD=""
+    fi
+    if [ -n "$SINGBOX_CMD" ]; then
+        info "Sing-box 命令已设置为: $SINGBOX_CMD"
+    else
+        warn "初始未找到 Sing-box 命令。"
+    fi
+}
+
+
+get_server_ip() {
+    local ips=()
+    ips+=($(curl -s --max-time 5 https://api64.ipify.org))
+    ips+=($(curl -s --max-time 5 https://api.ipify.org))
+    ips+=($(hostname -I | tr ' ' '\n' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$'))
+    ips+=($(hostname -I | tr ' ' '\n' | grep -E '^[0-9a-fA-F:]+$'))
+    local uniq_ips=($(echo "${ips[@]}" | tr ' ' '\n' | sort -u | grep -v '^$'))
+    if [ ${#uniq_ips[@]} -eq 0 ]; then
+        warn "未能自动检测到公网IP，请手动输入。"
+        read -p "请输入你的服务器公网IP: " SERVER_IP
+    elif [ ${#uniq_ips[@]} -eq 1 ]; then
+        SERVER_IP="${uniq_ips[0]}"
+        info "检测到服务器IP: $SERVER_IP"
+    else
+        echo "检测到多个IP地址："
+        for i in "${!uniq_ips[@]}"; do
+            echo "  $((i+1)). ${uniq_ips[$i]}"
+        done
+        read -p "请选择要使用的IP地址（输入序号）: " ip_choice
+        SERVER_IP="${uniq_ips[$((ip_choice-1))]}"
+        info "你选择的服务器IP: $SERVER_IP"
+    fi
+    LAST_SERVER_IP="$SERVER_IP"
+}
+
+generate_random_password() {
+    openssl rand -base64 24 | tr -dc 'A-Za-z0-9' | head -c 16
+}
+
+install_singbox_core() {
+    if [ -f "$SINGBOX_INSTALL_PATH_EXPECTED" ]; then
+        info "Sing-box 已检测到在 $SINGBOX_INSTALL_PATH_EXPECTED."
+        find_and_set_singbox_cmd
+        if [ -n "$SINGBOX_CMD" ]; then
+            current_version=$($SINGBOX_CMD version | awk '{print $3}' 2>/dev/null)
+            if [ -n "$current_version" ]; then
+                info "当前版本: $current_version"
+            else
+                info "无法确定当前版本 (可能是旧版sing-box或命令问题)。"
+            fi
+        else
+            info "无法确定当前版本，因为 sing-box 命令未找到。"
+        fi
+        read -p "是否重新安装/更新 Sing-box (beta)? (y/N): " reinstall_choice
+        if [[ ! "$reinstall_choice" =~ ^[Yy]$ ]]; then
+            return 0
+        fi
+    fi
+    info "正在安装/更新 Sing-box (beta)..."
+    if bash -c "$(curl -fsSL https://sing-box.vercel.app/)" @ install --beta; then
+        success "Sing-box 安装/更新成功。"
+        find_and_set_singbox_cmd
+        if [ -z "$SINGBOX_CMD" ]; then
+            error "安装后仍无法找到 sing-box 命令。请检查安装和 PATH。"
+            return 1
+        fi
+    else
+        error "Sing-box 安装失败。"
+        return 1
+    fi
+    return 0
+}
+
+generate_self_signed_cert() {
+    local domain_cn="$1"
+    if [ -f "$HYSTERIA_CERT_PEM" ] && [ -f "$HYSTERIA_CERT_KEY" ]; then
+        info "检测到已存在的证书: ${HYSTERIA_CERT_PEM} 和 ${HYSTERIA_CERT_KEY}"
+        existing_cn=$(openssl x509 -in "$HYSTERIA_CERT_PEM" -noout -subject | sed -n 's/.*CN = \([^,]*\).*/\1/p')
+        if [ "$existing_cn" == "$domain_cn" ]; then
+            info "证书 CN ($existing_cn) 与目标 ($domain_cn) 匹配，跳过重新生成。"
+            return 0
+        else
+            warn "证书 CN ($existing_cn) 与目标 ($domain_cn) 不匹配。"
+            read -p "是否使用新的 CN ($domain_cn) 重新生成证书? (y/N): " regen_cert_choice
+            if [[ ! "$regen_cert_choice" =~ ^[Yy]$ ]]; then
+                info "保留现有证书。"
+                return 0
+            fi
+        fi
+    fi
+
+    info "正在为 Hysteria2 生成自签名证书 (CN=${domain_cn})..."
+    mkdir -p "$HYSTERIA_CERT_DIR"
+    openssl ecparam -genkey -name prime256v1 -out "$HYSTERIA_CERT_KEY"
+    openssl req -new -x509 -days 36500 -key "$HYSTERIA_CERT_KEY" -out "$HYSTERIA_CERT_PEM" -subj "/CN=${domain_cn}"
+    if [ $? -eq 0 ]; then
+        success "自签名证书生成成功。"
+        info "证书: ${HYSTERIA_CERT_PEM}"
+        info "私钥: ${HYSTERIA_CERT_KEY}"
+    else
+        error "自签名证书生成失败。"
+        return 1
+    fi
+}
+
+generate_reality_credentials() {
+    if [ -z "$SINGBOX_CMD" ]; then
+        error "Sing-box command (SINGBOX_CMD) 未设置。无法生成凭证。"
+        find_and_set_singbox_cmd
+        if [ -z "$SINGBOX_CMD" ]; then
+            error "尝试查找后 Sing-box command 仍未设置。"
+            return 1
+        fi
+    fi
+    info "使用命令 '$SINGBOX_CMD' 生成 Reality UUID 和 Keypair..."
+    
+    info "执行: $SINGBOX_CMD generate uuid"
+    REALITY_UUID_VAL=$($SINGBOX_CMD generate uuid)
+    CMD_EXIT_CODE=$?
+    if [ $CMD_EXIT_CODE -ne 0 ] || [ -z "$REALITY_UUID_VAL" ]; then
+        error "执行 '$SINGBOX_CMD generate uuid' 失败 (退出码: $CMD_EXIT_CODE) 或输出为空。"
+        error "UUID 命令输出: '$REALITY_UUID_VAL'"
+        return 1
+    fi
+    info "生成的 UUID: $REALITY_UUID_VAL"
+    LAST_REALITY_UUID="$REALITY_UUID_VAL"
+
+    info "执行: $SINGBOX_CMD generate reality-keypair"
+    KEY_PAIR_OUTPUT=$($SINGBOX_CMD generate reality-keypair)
+    CMD_EXIT_CODE=$?
+    if [ $CMD_EXIT_CODE -ne 0 ] || [ -z "$KEY_PAIR_OUTPUT" ]; then
+        error "执行 '$SINGBOX_CMD generate reality-keypair' 失败 (退出码: $CMD_EXIT_CODE) 或输出为空。"
+        error "Keypair 命令输出: '$KEY_PAIR_OUTPUT'"
+        return 1
+    fi
+    info "原始 Keypair 输出:"
+    echo "$KEY_PAIR_OUTPUT"
+    
+    REALITY_PRIVATE_KEY_VAL=$(echo "$KEY_PAIR_OUTPUT" | awk -F': ' '/PrivateKey:/ {print $2}')
+    REALITY_PUBLIC_KEY_VAL=$(echo "$KEY_PAIR_OUTPUT" | awk -F': ' '/PublicKey:/ {print $2}')
+    
+    REALITY_PRIVATE_KEY_VAL=$(echo "${REALITY_PRIVATE_KEY_VAL}" | xargs)
+    REALITY_PUBLIC_KEY_VAL=$(echo "${REALITY_PUBLIC_KEY_VAL}" | xargs)
+
+    if [ -z "$REALITY_UUID_VAL" ] || [ -z "$REALITY_PRIVATE_KEY_VAL" ] || [ -z "$REALITY_PUBLIC_KEY_VAL" ]; then
+        error "生成 Reality凭证失败 (UUID, Private Key, 或 Public Key 在解析后为空)."
+        error "解析得到的 UUID: '$REALITY_UUID_VAL'"
+        error "解析得到的 Private Key: '$REALITY_PRIVATE_KEY_VAL'"
+        error "解析得到的 Public Key: '$REALITY_PUBLIC_KEY_VAL'"
+        return 1
+    fi
+    success "Reality UUID: $REALITY_UUID_VAL"
+    success "Reality Private Key: $REALITY_PRIVATE_KEY_VAL"
+    success "Reality Public Key: $REALITY_PUBLIC_KEY_VAL"
+    TEMP_REALITY_PRIVATE_KEY="$REALITY_PRIVATE_KEY_VAL" 
+    LAST_REALITY_PUBLIC_KEY="$REALITY_PUBLIC_KEY_VAL"
+}
+
+create_config_json() {
+    local mode="$1"
+    local hy2_port="$2"
+    local hy2_password="$3"
+    local hy2_masquerade_cn="$4"
+    local reality_port="$5"
+    local reality_uuid="$6"
+    local reality_private_key="$7"
+    local reality_sni="$8"
+
+    if [ -z "$SINGBOX_CMD" ]; then
+        error "Sing-box command (SINGBOX_CMD) 未设置。无法校验或格式化配置文件。"
+        return 1
+    fi
+
+    info "正在创建配置文件: ${SINGBOX_CONFIG_FILE}"
+    mkdir -p "$SINGBOX_CONFIG_DIR"
+
+    local inbounds_json_array=()
+    if [ "$mode" == "all" ] || [ "$mode" == "hysteria2" ]; then
+        inbounds_json_array+=( "$(cat <<EOF
+        {
+            "type": "hysteria2",
+            "tag": "hy2-in",
+            "listen": "::",
+            "listen_port": ${hy2_port},
+            "users": [
+                {
+                    "password": "${hy2_password}"
+                }
+            ],
+            "masquerade": "https://placeholder.services.mozilla.com",
+            "up_mbps": 100,
+            "down_mbps": 500,
+            "tls": {
+                "enabled": true,
+                "alpn": [
+                    "h3"
+                ],
+                "certificate_path": "${HYSTERIA_CERT_PEM}",
+                "key_path": "${HYSTERIA_CERT_KEY}",
+                "server_name": "${hy2_masquerade_cn}"
+            }
+        }
+EOF
+)" )
+    fi
+
+    if [ "$mode" == "all" ] || [ "$mode" == "reality" ]; then
+        inbounds_json_array+=( "$(cat <<EOF
+        {
+            "type": "vless",
+            "tag": "vless-in",
+            "listen": "::",
+            "listen_port": ${reality_port},
+            "users": [
+                {
+                    "uuid": "${reality_uuid}",
+                    "flow": "xtls-rprx-vision"
+                }
+            ],
+            "tls": {
+                "enabled": true,
+                "server_name": "${reality_sni}",
+                "reality": {
+                    "enabled": true,
+                    "handshake": {
+                        "server": "${reality_sni}",
+                        "server_port": 443
+                    },
+                    "private_key": "${reality_private_key}",
+                    "short_id": ["${LAST_REALITY_SHORT_ID}"]
+                }
+            }
+        }
 EOF
 )" )
     fi
