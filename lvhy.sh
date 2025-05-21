@@ -1315,7 +1315,6 @@ modify_node_params() {
         pause_return_menu
         return
     fi
-
     while true; do
         clear
         echo -e "${CYAN}${BOLD}当前节点参数:${NC}"
