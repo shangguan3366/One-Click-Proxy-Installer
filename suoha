@@ -1,415 +1,296 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ====================================================
-# 一键梭哈脚本 · v4.0 Integrated (2026)
-# 融合特性：Systemd自启 + 多语言 + 快捷菜单 + 完整节点输出
+# 一键梭哈脚本 · 2026 Final v4.1 · 管理加强版
+# 支持快捷指令：suoha quick / status / show / restart / cleanup ...
 # ====================================================
 
 set -euo pipefail
+IFS=$'\n\t'
 
-# ---------- 基础变量 ----------
-BASE_DIR="${HOME}/.suoha"
-BIN_DIR="$BASE_DIR/bin"
-LOG_DIR="$BASE_DIR/logs"
-STATE_DIR="$BASE_DIR/state"
+# ---------------- 基本路径与版本 ----------------
+readonly VERSION="4.1"
+readonly BASE_DIR="${HOME}/.suoha"
+readonly BIN_DIR="${BASE_DIR}/bin"
+readonly CONFIG_DIR="${BASE_DIR}/config"
+readonly LOG_DIR="${BASE_DIR}/logs"
+readonly NODES_DIR="${BASE_DIR}/nodes"
 
-XRAY_BIN="$BIN_DIR/xray"
-ARGO_BIN="$BIN_DIR/cloudflared"
+readonly XRAY_BIN="${BIN_DIR}/xray"
+readonly ARGO_BIN="${BIN_DIR}/cloudflared"
+readonly CONFIG_FILE="${BASE_DIR}/config.json"
+readonly TUNNEL_CONFIG="${BASE_DIR}/tunnel.yaml"
+readonly XRAY_LOG="${LOG_DIR}/xray.log"
+readonly ARGO_LOG="${LOG_DIR}/argo.log"
 
-CONFIG_FILE="$BASE_DIR/config.json"
-TUNNEL_CONFIG="$BASE_DIR/tunnel.yml"
+mkdir -p "$BASE_DIR" "$BIN_DIR" "$CONFIG_DIR" "$LOG_DIR" "$NODES_DIR"
 
-XRAY_LOG="$LOG_DIR/xray.log"
-ARGO_LOG="$LOG_DIR/argo.log"
-LANG_FILE="$BASE_DIR/language"
-LINK_FILE="$BASE_DIR/links.txt"
+# ---------------- 颜色函数 ----------------
+green()  { echo -e "\033[32m${1}\033[0m"; }
+yellow() { echo -e "\033[33m${1}\033[0m"; }
+red()    { echo -e "\033[31m${1}\033[0m"; }
 
-# 确保目录存在
-mkdir -p "$BIN_DIR" "$LOG_DIR" "$STATE_DIR"
-
-# ---------- 颜色函数 ----------
-red() { echo -e "\033[31m$1\033[0m"; }
-green() { echo -e "\033[32m$1\033[0m"; }
-yellow() { echo -e "\033[33m$1\033[0m"; }
-blue() { echo -e "\033[36m$1\033[0m"; }
-
-# ---------- 多语言支持 ----------
-declare -A zh=(
-  [welcome]="===== 一键梭哈 (v4.0 增强版) ====="
-  [menu_title]="当前状态管理"
-  [status_running]="运行中"
-  [status_stopped]="未运行"
-  [menu_opt_1]="安装/重置 临时隧道 (TryCloudflare)"
-  [menu_opt_2]="安装/重置 固定隧道 (自定义域名)"
-  [menu_opt_3]="查看节点链接"
-  [menu_opt_4]="停止服务 & 清理"
-  [menu_opt_5]="切换协议 (当前: %s)"
-  [menu_exit]="退出脚本"
-  [lang_prompt]="请选择语言 (1=中文 / 2=English): "
-  [installing]="正在安装依赖..."
-  [downloading]="正在下载核心组件..."
-  [generating]="正在生成配置..."
-  [starting]="正在启动服务..."
-  [links_saved]="节点信息已保存至: "
-  [shortcut_created]="快捷指令已创建！以后输入 'suoha' 即可管理。"
-  [tunnel_login]="请在浏览器打开下方链接进行授权 (Cloudflare):"
-  [input_domain]="请输入绑定的完整域名 (例如: vpn.example.com): "
-  [service_installed]="Systemd 服务已安装并设置为开机自启。"
-)
-
-declare -A en=(
-  [welcome]="===== Suoha One-Click (v4.0 Integrated) ====="
-  [menu_title]="Current Status"
-  [status_running]="Running"
-  [status_stopped]="Stopped"
-  [menu_opt_1]="Install/Reset Quick Tunnel"
-  [menu_opt_2]="Install/Reset Fixed Tunnel"
-  [menu_opt_3]="View Node Links"
-  [menu_opt_4]="Stop Service & Cleanup"
-  [menu_opt_5]="Toggle Protocol (Current: %s)"
-  [menu_exit]="Exit"
-  [lang_prompt]="Select language (1=Chinese / 2=English): "
-  [installing]="Installing dependencies..."
-  [downloading]="Downloading core binaries..."
-  [generating]="Generating configuration..."
-  [starting]="Starting services..."
-  [links_saved]="Links saved to: "
-  [shortcut_created]="Shortcut created! Type 'suoha' to manage later."
-  [tunnel_login]="Please authorize via the link below:"
-  [input_domain]="Enter full domain (e.g., vpn.example.com): "
-  [service_installed]="Systemd service installed and enabled."
-)
-
-# 语言初始化
-if [[ ! -f "$LANG_FILE" ]]; then
-  echo -e "${zh[lang_prompt]}\n${en[lang_prompt]}"
-  read -p "> " l
-  [[ "$l" == "1" ]] && echo zh >"$LANG_FILE" || echo en >"$LANG_FILE"
-fi
-LANGUAGE=$(cat "$LANG_FILE")
-t(){ 
-    local key=$1
-    local val=""
-    if [[ "$LANGUAGE" == "zh" ]]; then val="${zh[$key]}"; else val="${en[$key]}"; fi
-    # 支持格式化参数
-    if [[ $# -gt 1 ]]; then printf "$val" "${@:2}"; else echo "$val"; fi
-}
-
-# ---------- 状态管理 (持久化) ----------
-save_state() { echo "$2" > "$STATE_DIR/$1"; }
-load_state() { if [[ -f "$STATE_DIR/$1" ]]; then cat "$STATE_DIR/$1"; else echo ""; fi; }
-
-# ---------- 核心工具 ----------
-install_deps() {
-    if ! command -v curl &>/dev/null || ! command -v unzip &>/dev/null || ! command -v jq &>/dev/null; then
-        yellow "$(t installing)"
-        if command -v apt &>/dev/null; then apt update && apt install -y curl unzip jq
-        elif command -v dnf &>/dev/null; then dnf install -y curl unzip jq
-        elif command -v apk &>/dev/null; then apk add curl unzip jq bash
-        fi
-    fi
-    
-    # 创建快捷指令
-    if [[ ! -f "/usr/bin/suoha" ]]; then
-        cat > "/usr/bin/suoha" <<EOF
-#!/bin/bash
-bash $0 "\$@"
-EOF
-        chmod +x "/usr/bin/suoha"
-        green "$(t shortcut_created)"
-    fi
-}
-
-download_bins() {
-    if [[ -x "$XRAY_BIN" && -x "$ARGO_BIN" ]]; then return; fi
-    yellow "$(t downloading)"
-    
-    ARCH=$(uname -m)
-    case "$ARCH" in
-        x86_64|amd64) xray_file="Xray-linux-64.zip"; argo_arch="amd64" ;;
-        aarch64|arm64) xray_file="Xray-linux-arm64-v8a.zip"; argo_arch="arm64" ;;
-        *) red "Unsupported Arch"; exit 1 ;;
+# ---------------- 简单多语言（可后续扩展） ----------------
+t() {
+    local key="$1"
+    case "$key" in
+        welcome)          echo "===== 一键梭哈 v${VERSION} =====" ;;
+        quick)            echo "启动临时隧道" ;;
+        fixed)            echo "启动固定域名隧道（需要root）" ;;
+        status)           echo "查看运行状态 + 节点" ;;
+        show)             echo "只显示最近节点链接" ;;
+        restart)          echo "重启服务（仅fixed有效）" ;;
+        cleanup)          echo "停止并清理进程/服务" ;;
+        logs)             echo "查看日志（xray 或 argo）" ;;
+        update)           echo "检查/拉取更新（占位）" ;;
+        need_root)        echo "此操作需要 root 权限" ;;
+        argo_failed)      echo "获取 Argo 域名失败，请查看日志" ;;
+        links_saved)      echo "节点已保存至" ;;
+        running_ok)       echo "进程运行正常" ;;
+        no_nodes)         echo "还没有生成过节点链接" ;;
+        *)                echo "$key" ;;
     esac
-
-    # 下载 Xray
-    curl -L "https://github.com/XTLS/Xray-core/releases/latest/download/$xray_file" -o xray.zip
-    unzip -o xray.zip xray -d "$BIN_DIR"
-    rm -f xray.zip
-    chmod +x "$XRAY_BIN"
-
-    # 下载 Argo
-    curl -L "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$argo_arch" -o "$ARGO_BIN"
-    chmod +x "$ARGO_BIN"
 }
 
-get_isp() {
-    curl -s --max-time 3 https://speed.cloudflare.com/meta | jq -r '"\(.city)-\(.colo)-\(.asn)"' 2>/dev/null || echo "Unknown"
+# ---------------- 配置（可手动编辑） ----------------
+PREFER_ADDR="cloudflare.518920.xyz"           # ← 这里可以改成你最新的优选
+WS_PATH_PREFIX="s"
+PORT_MIN=20000
+PORT_MAX=49999
+XRAY_LOGLEVEL="warning"
+
+# ---------------- 工具函数 ----------------
+random_port() {
+    echo $((RANDOM % (PORT_MAX - PORT_MIN + 1) + PORT_MIN))
 }
 
-# ---------- 生成配置 ----------
-gen_config() {
-    local protocol=$1
-    # 读取或生成配置
-    UUID=$(load_state "uuid")
-    [[ -z "$UUID" ]] && UUID=$(cat /proc/sys/kernel/random/uuid || uuidgen) && save_state "uuid" "$UUID"
-    
-    PORT=$(load_state "port")
-    [[ -z "$PORT" ]] && PORT=$((RANDOM % 10000 + 10000)) && save_state "port" "$PORT"
-    
-    PATH_ID=$(load_state "path")
-    [[ -z "$PATH_ID" ]] && PATH_ID="sh-$(date +%s)" && save_state "path" "$PATH_ID"
+random_path() {
+    tr -dc 'a-z0-9' </dev/urandom | head -c 10
+}
 
-    # 保存协议
-    save_state "proto" "$protocol"
+wait_argo_domain() {
+    local timeout=90 sec=0
+    while (( sec < timeout )); do
+        if grep -qE 'https://[-a-z0-9]+\.trycloudflare\.com' "$ARGO_LOG" 2>/dev/null; then
+            sed -nE 's/.*(https:\/\/[-a-z0-9]+\.trycloudflare\.com).*/\1/p' "$ARGO_LOG" | tail -1 | sed 's|https://||'
+            return 0
+        fi
+        sleep 2
+        ((sec+=2))
+    done
+    red "$(t argo_failed)"
+    return 1
+}
 
-    cat > "$CONFIG_FILE" <<EOF
+check_processes() {
+    sleep 4
+    local ok=0
+    pgrep -f xray >/dev/null && ((ok++))
+    pgrep -f cloudflared >/dev/null && ((ok++))
+    [[ $ok -eq 2 ]] && green "$(t running_ok)" && return 0
+    red "进程异常（xray / cloudflared）"
+    return 1
+}
+
+save_node() {
+    local mode="$1" domain="$2" uuid="$3" path="$4" ts
+    ts=$(date '+%Y-%m-%d %H:%M:%S')
+    local vmess_json
+    vmess_json=$(cat <<EOF
+{"v":"2","ps":"Suoha_${mode}_${ts:5:5}","add":"${PREFER_ADDR}","port":"443","id":"${uuid}","aid":"0","net":"ws","type":"none","host":"${domain}","path":"/${path}","tls":"tls","sni":"${domain}"}
+EOF
+)
+    local vmess="vmess://$(echo -n "$vmess_json" | base64 -w 0)"
+
+    cat > "${NODES_DIR}/last-${mode,,}.txt" <<EOF
+模式     : ${mode}
+生成时间 : ${ts}
+优选地址 : ${PREFER_ADDR}
+域名/SNI : ${domain}
+UUID     : ${uuid}
+WS路径   : /${path}
+端口     : 443 (tls+ws)
+
+完整链接：
+${vmess}
+EOF
+
+    cp "${NODES_DIR}/last-${mode,,}.txt" "${NODES_DIR}/current.txt"
+    echo "${vmess}" > "${NODES_DIR}/vmess.txt"
+    green "$(t links_saved) ${NODES_DIR}/current.txt"
+    yellow "${vmess}"
+}
+
+show_node() {
+    local f="${NODES_DIR}/current.txt"
+    [[ -f "$f" ]] || { yellow "$(t no_nodes)"; return 1; }
+    cat "$f"
+}
+
+show_status() {
+    echo "进程状态："
+    ps aux | grep -E 'xray|cloudflared' | grep -v grep || echo "  (无运行进程)"
+
+    echo -e "\nSystemd 服务（fixed模式）："
+    systemctl --no-pager status suoha-xray suoha-argo 2>/dev/null || echo "  未找到服务"
+
+    echo -e "\n最近节点："
+    show_node
+}
+
+view_logs() {
+    local type="${1:-xray}"
+    case "$type" in
+        xray) tail -n 60 "$XRAY_LOG" ;;
+        argo) tail -n 60 "$ARGO_LOG" ;;
+        *) red "用法：suoha logs [xray|argo]"; return 1 ;;
+    esac
+}
+
+# ---------------- 核心功能 ----------------
+quick_tunnel() {
+    UUID=$(uuidgen 2>/dev/null || cat /proc/sys/kernel/random/uuid)
+    PORT=$(random_port)
+    PATH_WS=$(random_path)
+
+    cat >"$CONFIG_FILE" <<EOF
 {
-  "log": { "loglevel": "warning" },
+  "log": {"loglevel": "${XRAY_LOGLEVEL}"},
   "inbounds": [{
-    "port": $PORT,
+    "port": ${PORT},
     "listen": "127.0.0.1",
-    "protocol": "$protocol",
-    "settings": {
-      "clients": [{ "id": "$UUID", "alterId": 0 }],
-      "decryption": "none"
-    },
-    "streamSettings": {
-      "network": "ws",
-      "wsSettings": { "path": "/$PATH_ID" }
-    }
+    "protocol": "vmess",
+    "settings": {"clients": [{"id": "${UUID}"}]},
+    "streamSettings": {"network": "ws", "wsSettings": {"path": "/${PATH_WS}"}}
   }],
-  "outbounds": [{ "protocol": "freedom" }]
+  "outbounds": [{"protocol": "freedom"}]
 }
 EOF
+
+    pkill -f "cloudflared tunnel" 2>/dev/null || true
+    nohup "${XRAY_BIN}" run -c "$CONFIG_FILE" >"$XRAY_LOG" 2>&1 &
+    nohup "${ARGO_BIN}" tunnel --url "http://127.0.0.1:${PORT}" >"$ARGO_LOG" 2>&1 &
+
+    yellow "等待 Argo 域名（最多90秒）..."
+    DOMAIN=$(wait_argo_domain) || exit 1
+
+    save_node "Quick" "$DOMAIN" "$UUID" "$PATH_WS"
+    check_processes
 }
 
-# ---------- Systemd 管理 ----------
-install_systemd() {
-    local args="$1" # argo arguments
-    
-    # Xray Service
-    cat > /etc/systemd/system/suoha-xray.service <<EOF
+fixed_tunnel() {
+    [[ $EUID -ne 0 ]] && { red "$(t need_root)"; exit 1; }
+
+    UUID=$(uuidgen 2>/dev/null || cat /proc/sys/kernel/random/uuid)
+    PORT=$(random_port)
+    PATH_WS=$(random_path)
+
+    read -r -p "请输入完整域名： " FULL_DOMAIN
+    [[ -z "$FULL_DOMAIN" ]] && { red "域名不能为空"; exit 1; }
+
+    T_NAME="suoha-fixed"
+
+    "${ARGO_BIN}" tunnel create "$T_NAME" || true
+    "${ARGO_BIN}" tunnel route dns "$T_NAME" "$FULL_DOMAIN"
+
+    local creds
+    creds=$(find ~/.cloudflared -name "*.json" -type f | grep -v config | head -n1)
+    [[ -z "$creds" ]] && { red "找不到cloudflared凭证"; exit 1; }
+
+    cat >"$TUNNEL_CONFIG" <<EOF
+tunnel: $T_NAME
+credentials-file: $creds
+ingress:
+  - hostname: $FULL_DOMAIN
+    service: http://localhost:$PORT
+  - service: http_status:404
+EOF
+
+    # systemd 服务文件
+    cat >/etc/systemd/system/suoha-xray.service <<EOF2
 [Unit]
-Description=Suoha Xray Service
+Description=Suoha Xray
 After=network.target
 
 [Service]
-ExecStart=$XRAY_BIN run -c $CONFIG_FILE
+ExecStart=${XRAY_BIN} run -c ${CONFIG_FILE}
 Restart=always
-User=root
+User=$(whoami)
 
 [Install]
 WantedBy=multi-user.target
-EOF
+EOF2
 
-    # Argo Service
-    cat > /etc/systemd/system/suoha-argo.service <<EOF
+    cat >/etc/systemd/system/suoha-argo.service <<EOF2
 [Unit]
 Description=Suoha Argo Tunnel
 After=network.target
 
 [Service]
-ExecStart=$ARGO_BIN tunnel $args
+ExecStart=${ARGO_BIN} tunnel --config ${TUNNEL_CONFIG} run ${T_NAME}
 Restart=always
-User=root
+User=$(whoami)
 
 [Install]
 WantedBy=multi-user.target
-EOF
+EOF2
 
     systemctl daemon-reload
-    systemctl enable suoha-xray suoha-argo >/dev/null 2>&1
-    systemctl restart suoha-xray suoha-argo
-    green "$(t service_installed)"
+    systemctl enable --now suoha-xray suoha-argo
+
+    # 等几秒再生成链接（让服务真正启动）
+    sleep 6
+
+    save_node "Fixed" "$FULL_DOMAIN" "$UUID" "$PATH_WS"
+    check_processes
 }
 
-# ---------- 链接生成 (TLS & Non-TLS) ----------
-gen_links() {
-    local domain=$1
-    local remark=$2
-    local proto=$(load_state "proto")
-    local uuid=$(load_state "uuid")
-    local path=$(load_state "path")
-    
-    # 构造 JSON
-    # 1. TLS Link (Standard 443)
-    local json_tls
-    if [[ "$proto" == "vmess" ]]; then
-        json_tls=$(jq -n \
-            --arg v "2" --arg ps "${remark}_TLS" --arg add "$domain" --arg port "443" \
-            --arg id "$uuid" --arg aid "0" --arg net "ws" --arg type "none" \
-            --arg host "$domain" --arg path "/$path" --arg tls "tls" \
-            '{v:$v, ps:$ps, add:$add, port:$port, id:$id, aid:$aid, net:$net, type:$type, host:$host, path:$path, tls:$tls}')
-        link_tls="vmess://$(echo -n "$json_tls" | base64 -w0)"
-    else
-        # VLESS TLS
-        link_tls="vless://${uuid}@${domain}:443?encryption=none&security=tls&type=ws&host=${domain}&path=%2F${path}#${remark}_TLS"
-    fi
+cleanup_all() {
+    pkill -f xray 2>/dev/null || true
+    pkill -f cloudflared 2>/dev/null || true
+    systemctl disable --now suoha-xray suoha-argo 2>/dev/null || true
+    green "已清理进程和服务"
+}
 
-    # 2. Non-TLS Link (Port 80 - 仅用于 Cloudflare 允许 HTTP 的情况)
-    # 这里的 Non-TLS 其实是客户端不开启 TLS，连接 Cloudflare 的 80 端口，Cloudflare 再回源
-    local json_none
-    if [[ "$proto" == "vmess" ]]; then
-        json_none=$(jq -n \
-            --arg v "2" --arg ps "${remark}_NoTLS" --arg add "$domain" --arg port "80" \
-            --arg id "$uuid" --arg aid "0" --arg net "ws" --arg type "none" \
-            --arg host "$domain" --arg path "/$path" --arg tls "" \
-            '{v:$v, ps:$ps, add:$add, port:$port, id:$id, aid:$aid, net:$net, type:$type, host:$host, path:$path, tls:$tls}')
-        link_none="vmess://$(echo -n "$json_none" | base64 -w0)"
-    else
-        # VLESS Non-TLS
-        link_none="vless://${uuid}@${domain}:80?encryption=none&security=none&type=ws&host=${domain}&path=%2F${path}#${remark}_NoTLS"
-    fi
-
-    # 保存并显示
-    cat > "$LINK_FILE" <<EOF
-=============================================
-节点生成时间: $(date)
-ISP Info: $(get_isp)
-UUID: $uuid
-Path: /$path
-Protocol: $proto
-=============================================
-
-[1] TLS 节点 (推荐, Port 443):
-$link_tls
-
-[2] 非 TLS 节点 (Port 80, 需CF支持):
-$link_none
-
-=============================================
-EOF
-    
+# ---------------- 主入口 ----------------
+if [[ $# -eq 0 ]]; then
     clear
-    cat "$LINK_FILE"
-    echo ""
-    green "$(t links_saved)$LINK_FILE"
-}
-
-# ---------- 启动逻辑 ----------
-start_quick() {
-    local proto=$(load_state "proto")
-    [[ -z "$proto" ]] && proto="vmess"
-    
-    gen_config "$proto"
-    
-    # 临时隧道不支持 Systemd 保持域名 (因为每次都会变)，所以用 nohup
-    # 先停止 Systemd 以防冲突
-    systemctl stop suoha-argo suoha-xray 2>/dev/null || true
-    pkill -f "$XRAY_BIN" || true
-    pkill -f "$ARGO_BIN" || true
-
-    "$XRAY_BIN" run -c "$CONFIG_FILE" >/dev/null 2>&1 &
-    "$ARGO_BIN" tunnel --url "http://127.0.0.1:$PORT" --no-autoupdate >"$ARGO_LOG" 2>&1 &
-
-    echo "$(t starting)"
-    sleep 5
-    
-    local try_domain
-    for i in {1..10}; do
-        try_domain=$(grep -oE "https://[a-zA-Z0-9-]+\.trycloudflare\.com" "$ARGO_LOG" | head -n 1 | sed 's/https:\/\///')
-        [[ -n "$try_domain" ]] && break
-        sleep 2
-    done
-
-    if [[ -z "$try_domain" ]]; then
-        red "获取临时域名失败，请检查日志: $ARGO_LOG"
-        exit 1
-    fi
-    
-    save_state "domain" "$try_domain"
-    save_state "mode" "quick"
-    gen_links "$try_domain" "Suoha_Quick"
-}
-
-start_fixed() {
-    local proto=$(load_state "proto")
-    [[ -z "$proto" ]] && proto="vmess"
-    
-    yellow "$(t tunnel_login)"
-    "$ARGO_BIN" tunnel login
-    
-    read -r -p "$(t input_domain)" full_domain
-    if [[ -z "$full_domain" ]]; then red "Empty domain"; exit 1; fi
-    
-    gen_config "$proto"
-    
-    local tunnel_name="suoha-fixed"
-    "$ARGO_BIN" tunnel create "$tunnel_name" 2>/dev/null || true
-    "$ARGO_BIN" tunnel route dns "$tunnel_name" "$full_domain" 2>/dev/null || true
-    
-    local cred_file
-    cred_file=$(find ~/.cloudflared -name "*.json" | xargs grep -l "$tunnel_name" | head -n 1)
-    
-    cat > "$TUNNEL_CONFIG" <<EOF
-tunnel: $tunnel_name
-credentials-file: $cred_file
-ingress:
-  - hostname: $full_domain
-    service: http://localhost:$PORT
-  - service: http_status:404
-EOF
-
-    save_state "domain" "$full_domain"
-    save_state "mode" "fixed"
-    
-    # 使用 Systemd 托管
-    install_systemd "--config $TUNNEL_CONFIG run $tunnel_name"
-    gen_links "$full_domain" "Suoha_Fixed"
-}
-
-cleanup() {
-    systemctl stop suoha-xray suoha-argo 2>/dev/null || true
-    systemctl disable suoha-xray suoha-argo 2>/dev/null || true
-    pkill -f "$XRAY_BIN" || true
-    pkill -f "$ARGO_BIN" || true
-    rm -f "$BASE_DIR"/*.pid
-    green "All services stopped."
-}
-
-# ---------- 主菜单 ----------
-show_menu() {
-    clear
-    install_deps
-    download_bins
-    
-    local curr_proto=$(load_state "proto")
-    [[ -z "$curr_proto" ]] && curr_proto="vmess"
-    
     green "$(t welcome)"
-    echo "--------------------------------"
-    if pkill -0 -f "$XRAY_BIN" >/dev/null 2>&1; then
-        echo -e "$(t menu_title): $(green "$(t status_running)") [$(load_state mode)]"
-        echo -e "Domain: $(blue "$(load_state domain)")"
-    else
-        echo -e "$(t menu_title): $(red "$(t status_stopped)")"
-    fi
-    echo "--------------------------------"
-    echo "1. $(t menu_opt_1)"
-    echo "2. $(t menu_opt_2)"
-    echo "3. $(t menu_opt_3)"
-    echo "4. $(t menu_opt_4)"
-    echo "5. $(t menu_opt_5 "$curr_proto")"
-    echo "0. $(t menu_exit)"
-    echo ""
-    read -p "> " choice
-    
-    case "$choice" in
-        1) start_quick ;;
-        2) start_fixed ;;
-        3) 
-           if [[ -f "$LINK_FILE" ]]; then cat "$LINK_FILE"; else red "No links found"; fi 
-           read -p "Press Enter..."
-           show_menu
-           ;;
-        4) cleanup; show_menu ;;
-        5) 
-           if [[ "$curr_proto" == "vmess" ]]; then save_state "proto" "vless"; else save_state "proto" "vmess"; fi
-           show_menu
-           ;;
-        0) exit 0 ;;
-        *) show_menu ;;
+    echo
+    echo " 1) $(t quick)"
+    echo " 2) $(t fixed)"
+    echo " 3) $(t show)"
+    echo " 4) $(t status)"
+    echo " 5) $(t restart)"
+    echo " 6) $(t cleanup)"
+    echo " 7) 查看日志"
+    echo " 0) 退出"
+    echo
+    read -r -n1 -p "请选择 [1-7,0] → " c
+    echo
+    case $c in
+        1) quick_tunnel ;;
+        2) fixed_tunnel ;;
+        3) show_node ;;
+        4) show_status ;;
+        5) systemctl restart suoha-xray suoha-argo 2>/dev/null && green "重启完成" ;;
+        6) cleanup_all ;;
+        7) read -r -p "xray / argo ? " lt; view_logs "${lt:-xray}" ;;
+        *) exit 0 ;;
     esac
-}
+    exit 0
+fi
 
-# 入口
-show_menu
+# 子命令模式
+case "$1" in
+    quick)      quick_tunnel ;;
+    fixed)      fixed_tunnel ;;
+    status)     show_status ;;
+    show|link|nodes) show_node ;;
+    restart)    systemctl restart suoha-xray suoha-argo 2>/dev/null && green "重启完成" ;;
+    stop|cleanup) cleanup_all ;;
+    logs)       shift; view_logs "${1:-xray}" ;;
+    update)     echo "更新功能待实现，可手动 git pull 或重新下载" ;;
+    -v|--version) echo "v${VERSION}" ;;
+    *)          echo "支持的命令：quick fixed status show restart cleanup logs update"
+                echo "无参数 → 进入菜单" ;;
+esac
