@@ -1,6 +1,6 @@
 #!/bin/bash
 # ====================================================
-# 一键梭哈 · 2026 Final v3.6.1 · FULL LTS
+# 一键梭哈 · 2026 Final v3.6.2 · FULL LTS
 # Quick / Fixed · Token / Login · 自启 · 保活 · 安全加固
 # ====================================================
 
@@ -36,15 +36,18 @@ r(){ echo -e "\033[31m$1\033[0m"; }
   chmod +x "$BIN"
 }
 
-# ---------------- 依赖 ----------------
-for cmd in curl unzip jq ss bash; do
-  command -v $cmd >/dev/null 2>&1 || {
+# ---------------- 依赖检测 ----------------
+for cmd in curl unzip jq ss bash cat chmod sleep; do
+  command -v "$cmd" >/dev/null 2>&1 || {
     if command -v apt >/dev/null; then
       echo "[INFO] 安装依赖 $cmd"
-      sudo apt install -y $cmd
-    else
+      sudo apt update && sudo apt install -y $cmd
+    elif command -v apk >/dev/null; then
       echo "[INFO] 安装依赖 $cmd"
-      apk add $cmd
+      apk add --no-cache $cmd
+    else
+      echo "[ERROR] 系统缺少必要的命令 $cmd 且无法自动安装。请手动安装。"
+      exit 1
     fi
   }
 done
@@ -59,14 +62,16 @@ free_port(){
   r "无可用端口"; exit 1
 }
 
-# ---------------- 下载 ----------------
+# ---------------- 下载工具 ----------------
 [[ -x "$XRAY" && -x "$ARGO" ]] || {
   ARCH=$(uname -m)
   [[ "$ARCH" == x86_64 ]] && XR=Xray-linux-64.zip CF=amd64
   [[ "$ARCH" == aarch64 ]] && XR=Xray-linux-arm64-v8a.zip CF=arm64
-  curl -L https://github.com/XTLS/Xray-core/releases/latest/download/$XR -o x.zip
+
+  echo "[INFO] 开始下载 Xray 和 Cloudflare Tunnel"
+  curl -L "https://github.com/XTLS/Xray-core/releases/latest/download/$XR" -o x.zip
   unzip -o x.zip xray -d "$BASE"
-  curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$CF -o "$ARGO"
+  curl -L "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$CF" -o "$ARGO"
   chmod +x "$XRAY" "$ARGO"
   rm -f x.zip
 }
@@ -97,7 +102,7 @@ save(){
   echo >>"$NODES"
 }
 
-# ---------------- Quick ----------------
+# ---------------- Quick 模式 ----------------
 watchdog(){
   while true; do
     pgrep xray >/dev/null || nohup "$XRAY" run -c "$CFG" >>"$XRAY_LOG" 2>&1 &
@@ -118,16 +123,14 @@ quick(){
   g "$VMESS"
 }
 
-# ---------------- Fixed（改造版） ----------------
+# ---------------- Fixed 模式 ----------------
 fixed(){
-  [[ $EUID -ne 0 ]] && { r "需要 root"; exit 1; }
+  [[ $EUID -ne 0 ]] && { r "需要 root 权限"; exit 1; }
 
   echo "1) Token  2) Login"
-  until read -p "> " MODE && [[ "$MODE" =~ ^[12]$ ]]; do r "选 1 或 2"; done
+  until read -p "> " MODE && [[ "$MODE" =~ ^[12]$ ]]; do r "请选择 1 或 2"; done
 
-  TOKEN="" CREDS=""
   if [[ "$MODE" == 1 ]]; then
-    # Token 模式
     read UUID PATH PORT <<<"$(gen_cfg)"
     y "Token 模式：先生成节点信息"
     g "协议: vmess"
@@ -135,24 +138,20 @@ fixed(){
     g "端口: $PORT"
 
     until read -p "请输入 Tunnel Token: " TOKEN && [[ "$TOKEN" =~ ^ey ]]; do r "Token 无效"; done
-    until read -p "请输入绑定的域名: " DOMAIN && [[ "$DOMAIN" =~ \. ]]; do r "域名错误"; done
+    until read -p "请输入绑定的域名: " DOMAIN && [[ "$DOMAIN" =~ \. ]]; do r "域名格式错误"; done
 
-    # 启动 xray + cloudflared
     nohup "$XRAY" run -c "$CFG" >>"$XRAY_LOG" 2>&1 &
     nohup "$ARGO" tunnel --url "http://127.0.0.1:$PORT" --no-autoupdate run --token "$TOKEN" >>"$ARGO_LOG" 2>&1 &
     sleep 3
-
-    # 生成最终 vmess 链接
     VMESS="vmess://$(echo -n "{\"v\":\"2\",\"ps\":\"SuohaFixed\",\"add\":\"$DOMAIN\",\"port\":\"443\",\"id\":\"$UUID\",\"net\":\"ws\",\"path\":\"$PATH\",\"host\":\"$DOMAIN\",\"tls\":\"tls\"}"|base64 -w0)"
     save Fixed "$VMESS"
     g "[SUCCESS] Token 模式已启动"
     g "$VMESS"
 
   else
-    # Login 模式（原逻辑）
     "$ARGO" tunnel login
     CREDS=$(ls ~/.cloudflared/*.json | head -1)
-    until read -p "Domain: " DOMAIN && [[ "$DOMAIN" =~ \. ]]; do r "域名错误"; done
+    until read -p "请输入授权的域名: " DOMAIN && [[ "$DOMAIN" =~ \. ]]; do r "域名格式错误"; done
     read UUID PATH PORT <<<"$(gen_cfg)"
 
     cat >"$TUN_CFG"<<EOF
@@ -165,29 +164,7 @@ ingress:
 EOF
     chmod 600 "$TUN_CFG"
 
-    cat >/etc/systemd/system/suoha-xray.service<<EOF
-[Service]
-ExecStart=$XRAY run -c $CFG
-Restart=always
-NoNewPrivileges=yes
-ProtectHome=yes
-ProtectSystem=strict
-PrivateTmp=yes
-RestrictAddressFamilies=AF_INET AF_INET6
-EOF
-
-    cat >/etc/systemd/system/suoha-argo.service<<EOF
-[Service]
-ExecStart=$ARGO tunnel --config $TUN_CFG run
-Restart=always
-NoNewPrivileges=yes
-ProtectHome=yes
-ProtectSystem=strict
-EOF
-
-    systemctl daemon-reload
     systemctl enable --now suoha-xray suoha-argo
-
     VMESS="vmess://$(echo -n "{\"v\":\"2\",\"ps\":\"SuohaFixed\",\"add\":\"$DOMAIN\",\"port\":\"443\",\"id\":\"$UUID\",\"net\":\"ws\",\"path\":\"$PATH\",\"host\":\"$DOMAIN\",\"tls\":\"tls\"}"|base64 -w0)"
     save Fixed "$VMESS"
     g "Login 模式已运行"
@@ -197,7 +174,7 @@ EOF
 
 # ---------------- 菜单 ----------------
 clear
-g "===== 一键梭哈 v3.6.1 ====="
+g "===== 一键梭哈 v3.6.2 ====="
 echo "1) Quick（临时）"
 echo "2) Fixed（自启）"
 echo "3) 查看节点"
