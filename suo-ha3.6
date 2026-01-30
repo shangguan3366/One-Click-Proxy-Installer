@@ -1,0 +1,188 @@
+#!/bin/bash
+# ====================================================
+# 一键梭哈 · 2026 Final v3.6.0 · FULL LTS
+# Quick / Fixed · Token / Login · 自启 · 保活 · 安全加固
+# ====================================================
+
+set -euo pipefail
+
+# ---------------- 基础路径 ----------------
+BASE="$HOME/.suoha"
+XRAY="$BASE/xray"
+ARGO="$BASE/cloudflared"
+CFG_DIR="$BASE/.config/xray"
+CFG="$CFG_DIR/config.json"
+TUN_CFG="$BASE/config.yaml"
+LOG="$BASE/logs"
+XRAY_LOG="$LOG/xray.log"
+ARGO_LOG="$LOG/argo.log"
+NODES="$BASE/nodes.txt"
+BIN="/usr/local/bin/suoha"
+SELF="$(realpath "$0" 2>/dev/null || echo "$0")"
+
+mkdir -p "$BASE" "$CFG_DIR" "$LOG"
+chmod 700 "$BASE" "$CFG_DIR" "$LOG"
+
+# ---------------- UI ----------------
+g(){ echo -e "\033[32m$1\033[0m"; }
+y(){ echo -e "\033[33m$1\033[0m"; }
+r(){ echo -e "\033[31m$1\033[0m"; }
+
+# ---------------- 快捷方式 ----------------
+[[ -x "$BIN" ]] || {
+  cp "$SELF" "$BASE/suoha.sh"
+  chmod +x "$BASE/suoha.sh"
+  echo -e "#!/bin/bash\nexec bash $BASE/suoha.sh" >"$BIN"
+  chmod +x "$BIN"
+}
+
+# ---------------- 依赖 ----------------
+command -v curl unzip jq ss >/dev/null || {
+  if command -v apt >/dev/null; then
+    sudo apt install -y curl unzip jq iproute2
+  else
+    apk add curl unzip jq iproute2 bash
+  fi
+}
+
+# ---------------- 端口检测 ----------------
+free_port(){
+  for _ in {1..30}; do
+    p=$((RANDOM%10000+20000))
+    ss -ltn | grep -q ":$p " || { echo "$p"; return; }
+    y "端口 $p 占用，换一个"
+  done
+  r "无可用端口"; exit 1
+}
+
+# ---------------- 下载 ----------------
+[[ -x "$XRAY" && -x "$ARGO" ]] || {
+  ARCH=$(uname -m)
+  [[ "$ARCH" == x86_64 ]] && XR=Xray-linux-64.zip CF=amd64
+  [[ "$ARCH" == aarch64 ]] && XR=Xray-linux-arm64-v8a.zip CF=arm64
+  curl -L https://github.com/XTLS/Xray-core/releases/latest/download/$XR -o x.zip
+  unzip -o x.zip xray -d "$BASE"
+  curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$CF -o "$ARGO"
+  chmod +x "$XRAY" "$ARGO"
+  rm -f x.zip
+}
+
+# ---------------- 生成配置 ----------------
+gen_cfg(){
+  UUID=$(cat /proc/sys/kernel/random/uuid)
+  PORT=$(free_port)
+  PATH="/suoha-$(date +%s)"
+  cat >"$CFG"<<EOF
+{
+ "inbounds":[{
+  "port":$PORT,"listen":"127.0.0.1","protocol":"vmess",
+  "settings":{"clients":[{"id":"$UUID"}]},
+  "streamSettings":{"network":"ws","wsSettings":{"path":"$PATH"}}
+ }],
+ "outbounds":[{"protocol":"freedom"}]
+}
+EOF
+  chmod 600 "$CFG"
+  echo "$UUID $PATH $PORT"
+}
+
+# ---------------- 保存节点 ----------------
+save(){
+  echo "[$(date '+%F %T')] $1" >>"$NODES"
+  echo "$2" >>"$NODES"
+  echo >>"$NODES"
+}
+
+# ---------------- Quick ----------------
+watchdog(){
+  while true; do
+    pgrep xray >/dev/null || nohup "$XRAY" run -c "$CFG" >>"$XRAY_LOG" 2>&1 &
+    pgrep cloudflared >/dev/null || nohup "$ARGO" tunnel --url "http://127.0.0.1:$PORT" >>"$ARGO_LOG" 2>&1 &
+    sleep 30
+  done
+}
+
+quick(){
+  read UUID PATH PORT <<<"$(gen_cfg)"
+  nohup "$XRAY" run -c "$CFG" >>"$XRAY_LOG" 2>&1 &
+  nohup "$ARGO" tunnel --url "http://127.0.0.1:$PORT" >>"$ARGO_LOG" 2>&1 &
+  nohup watchdog >/dev/null 2>&1 &
+  sleep 5
+  DOMAIN=$(grep -oE 'https://[-a-z0-9]+\.trycloudflare\.com' "$ARGO_LOG"|head -1|sed 's#https://##')
+  VMESS="vmess://$(echo -n "{\"v\":\"2\",\"ps\":\"SuohaQuick\",\"add\":\"cloudflare\",\"port\":\"443\",\"id\":\"$UUID\",\"net\":\"ws\",\"path\":\"$PATH\",\"host\":\"$DOMAIN\",\"tls\":\"tls\"}"|base64 -w0)"
+  save Quick "$VMESS"
+  g "$VMESS"
+}
+
+# ---------------- Fixed ----------------
+fixed(){
+  [[ $EUID -ne 0 ]] && { r "需要 root"; exit 1; }
+
+  echo "1) Token  2) Login"
+  until read -p "> " A && [[ "$A" =~ ^[12]$ ]]; do r "选 1 或 2"; done
+
+  TOKEN="" CREDS=""
+  if [[ "$A" == 1 ]]; then
+    y "Zero Trust → Networks → Tunnels → Create Token"
+    until read -p "Token: " TOKEN && [[ "$TOKEN" =~ ^ey ]]; do r "Token 无效"; done
+  else
+    "$ARGO" tunnel login
+    CREDS=$(ls ~/.cloudflared/*.json | head -1)
+  fi
+
+  until read -p "Domain: " DOMAIN && [[ "$DOMAIN" =~ \. ]]; do r "域名错误"; done
+  read UUID PATH PORT <<<"$(gen_cfg)"
+
+cat >"$TUN_CFG"<<EOF
+tunnel: suoha
+${TOKEN:+token: $TOKEN}
+${CREDS:+credentials-file: $CREDS}
+ingress:
+ - hostname: $DOMAIN
+   service: http://localhost:$PORT
+ - service: http_status:404
+EOF
+chmod 600 "$TUN_CFG"
+
+cat >/etc/systemd/system/suoha-xray.service<<EOF
+[Service]
+ExecStart=$XRAY run -c $CFG
+Restart=always
+NoNewPrivileges=yes
+ProtectHome=yes
+ProtectSystem=strict
+PrivateTmp=yes
+RestrictAddressFamilies=AF_INET AF_INET6
+EOF
+
+cat >/etc/systemd/system/suoha-argo.service<<EOF
+[Service]
+ExecStart=$ARGO tunnel --config $TUN_CFG run
+Restart=always
+NoNewPrivileges=yes
+ProtectHome=yes
+ProtectSystem=strict
+EOF
+
+systemctl daemon-reload
+systemctl enable --now suoha-xray suoha-argo
+
+VMESS="vmess://$(echo -n "{\"v\":\"2\",\"ps\":\"SuohaFixed\",\"add\":\"cloudflare\",\"port\":\"443\",\"id\":\"$UUID\",\"net\":\"ws\",\"path\":\"$PATH\",\"host\":\"$DOMAIN\",\"tls\":\"tls\"}"|base64 -w0)"
+save Fixed "$VMESS"
+g "Fixed 已运行"
+}
+
+# ---------------- 菜单 ----------------
+clear
+g "===== 一键梭哈 v3.6.0 ====="
+echo "1) Quick（临时）"
+echo "2) Fixed（自启）"
+echo "3) 查看节点"
+echo "0) 退出"
+read -p "> " C
+case "$C" in
+ 1) quick ;;
+ 2) fixed ;;
+ 3) cat "$NODES" ;;
+ *) exit ;;
+esac
