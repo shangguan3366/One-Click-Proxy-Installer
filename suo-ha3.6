@@ -1,10 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ====================================================
-# 一键梭哈 · 2026 Final v3.6.0 · FULL LTS
-# Quick / Fixed · Token / Login · 自启 · 保活 · 安全加固
+# 一键梭哈 · 2026 Final v3.6.1 · FULL LTS
+# Fixed Token BUGFIX · Alpine / Debian / Ubuntu
 # ====================================================
 
 set -euo pipefail
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 # ---------------- 基础路径 ----------------
 BASE="$HOME/.suoha"
@@ -39,7 +40,7 @@ r(){ echo -e "\033[31m$1\033[0m"; }
 # ---------------- 依赖 ----------------
 command -v curl unzip jq ss >/dev/null || {
   if command -v apt >/dev/null; then
-    sudo apt install -y curl unzip jq iproute2
+    apt install -y curl unzip jq iproute2
   else
     apk add curl unzip jq iproute2 bash
   fi
@@ -50,7 +51,6 @@ free_port(){
   for _ in {1..30}; do
     p=$((RANDOM%10000+20000))
     ss -ltn | grep -q ":$p " || { echo "$p"; return; }
-    y "端口 $p 占用，换一个"
   done
   r "无可用端口"; exit 1
 }
@@ -71,19 +71,21 @@ free_port(){
 gen_cfg(){
   UUID=$(cat /proc/sys/kernel/random/uuid)
   PORT=$(free_port)
-  PATH="/suoha-$(date +%s)"
+  WS_PATH="/suoha"
   cat >"$CFG"<<EOF
 {
  "inbounds":[{
-  "port":$PORT,"listen":"127.0.0.1","protocol":"vmess",
+  "port":$PORT,
+  "listen":"127.0.0.1",
+  "protocol":"vmess",
   "settings":{"clients":[{"id":"$UUID"}]},
-  "streamSettings":{"network":"ws","wsSettings":{"path":"$PATH"}}
+  "streamSettings":{"network":"ws","wsSettings":{"path":"$WS_PATH"}}
  }],
  "outbounds":[{"protocol":"freedom"}]
 }
 EOF
   chmod 600 "$CFG"
-  echo "$UUID $PATH $PORT"
+  echo "$UUID $WS_PATH $PORT"
 }
 
 # ---------------- 保存节点 ----------------
@@ -93,20 +95,11 @@ save(){
   echo >>"$NODES"
 }
 
-# ---------------- Quick ----------------
-watchdog(){
-  while true; do
-    pgrep xray >/dev/null || nohup "$XRAY" run -c "$CFG" >>"$XRAY_LOG" 2>&1 &
-    pgrep cloudflared >/dev/null || nohup "$ARGO" tunnel --url "http://127.0.0.1:$PORT" >>"$ARGO_LOG" 2>&1 &
-    sleep 30
-  done
-}
-
+# ---------------- Quick（未改） ----------------
 quick(){
   read UUID PATH PORT <<<"$(gen_cfg)"
   nohup "$XRAY" run -c "$CFG" >>"$XRAY_LOG" 2>&1 &
   nohup "$ARGO" tunnel --url "http://127.0.0.1:$PORT" >>"$ARGO_LOG" 2>&1 &
-  nohup watchdog >/dev/null 2>&1 &
   sleep 5
   DOMAIN=$(grep -oE 'https://[-a-z0-9]+\.trycloudflare\.com' "$ARGO_LOG"|head -1|sed 's#https://##')
   VMESS="vmess://$(echo -n "{\"v\":\"2\",\"ps\":\"SuohaQuick\",\"add\":\"cloudflare\",\"port\":\"443\",\"id\":\"$UUID\",\"net\":\"ws\",\"path\":\"$PATH\",\"host\":\"$DOMAIN\",\"tls\":\"tls\"}"|base64 -w0)"
@@ -114,67 +107,83 @@ quick(){
   g "$VMESS"
 }
 
-# ---------------- Fixed ----------------
+# ---------------- Fixed（v3.6.1 修复版） ----------------
 fixed(){
   [[ $EUID -ne 0 ]] && { r "需要 root"; exit 1; }
 
-  echo "1) Token  2) Login"
+  echo "1) Token  2) credentials JSON"
   until read -p "> " A && [[ "$A" =~ ^[12]$ ]]; do r "选 1 或 2"; done
 
-  TOKEN="" CREDS=""
+  TOKEN=""
+  CREDS=""
+
   if [[ "$A" == 1 ]]; then
-    y "Zero Trust → Networks → Tunnels → Create Token"
-    until read -p "Token: " TOKEN && [[ "$TOKEN" =~ ^ey ]]; do r "Token 无效"; done
+    read -p "Tunnel Token: " TOKEN
+    [[ "$TOKEN" =~ ^ey ]] || r "Token 格式异常（仍继续）"
   else
     "$ARGO" tunnel login
     CREDS=$(ls ~/.cloudflared/*.json | head -1)
+    [[ -f "$CREDS" ]] || { r "未找到 credentials"; exit 1; }
   fi
 
-  until read -p "Domain: " DOMAIN && [[ "$DOMAIN" =~ \. ]]; do r "域名错误"; done
+  read -p "绑定的域名: " DOMAIN
+  [[ "$DOMAIN" =~ \. ]] || { r "域名错误"; exit 1; }
+
   read UUID PATH PORT <<<"$(gen_cfg)"
 
-cat >"$TUN_CFG"<<EOF
-tunnel: suoha
-${TOKEN:+token: $TOKEN}
-${CREDS:+credentials-file: $CREDS}
-ingress:
- - hostname: $DOMAIN
-   service: http://localhost:$PORT
- - service: http_status:404
-EOF
-chmod 600 "$TUN_CFG"
+  # ---------- 生成 Tunnel 配置（核心修复点） ----------
+  if [[ "$A" == 1 ]]; then
+    {
+      echo "tunnel: suoha"
+      echo "token: $TOKEN"
+      echo "ingress:"
+      echo " - hostname: $DOMAIN"
+      echo "   service: http://localhost:$PORT"
+      echo " - service: http_status:404"
+    } >"$TUN_CFG"
+  else
+    {
+      echo "tunnel: suoha"
+      echo "credentials-file: $CREDS"
+      echo "ingress:"
+      echo " - hostname: $DOMAIN"
+      echo "   service: http://localhost:$PORT"
+      echo " - service: http_status:404"
+    } >"$TUN_CFG"
+  fi
+  chmod 600 "$TUN_CFG"
 
-cat >/etc/systemd/system/suoha-xray.service<<EOF
+  # ---------- systemd ----------
+  cat >/etc/systemd/system/suoha-xray.service<<EOF
 [Service]
 ExecStart=$XRAY run -c $CFG
 Restart=always
-NoNewPrivileges=yes
-ProtectHome=yes
-ProtectSystem=strict
-PrivateTmp=yes
-RestrictAddressFamilies=AF_INET AF_INET6
 EOF
 
-cat >/etc/systemd/system/suoha-argo.service<<EOF
+  # ---------- cloudflared 启动兼容 ----------
+  if [[ "$A" == 1 ]] && "$ARGO" tunnel run --help 2>&1 | grep -q -- '--token-file'; then
+    ARGO_CMD="$ARGO tunnel run --token-file <(echo $TOKEN)"
+  else
+    ARGO_CMD="$ARGO tunnel run --config $TUN_CFG"
+  fi
+
+  cat >/etc/systemd/system/suoha-argo.service<<EOF
 [Service]
-ExecStart=$ARGO tunnel --config $TUN_CFG run
+ExecStart=$ARGO_CMD
 Restart=always
-NoNewPrivileges=yes
-ProtectHome=yes
-ProtectSystem=strict
 EOF
 
-systemctl daemon-reload
-systemctl enable --now suoha-xray suoha-argo
+  systemctl daemon-reload
+  systemctl enable --now suoha-xray suoha-argo
 
-VMESS="vmess://$(echo -n "{\"v\":\"2\",\"ps\":\"SuohaFixed\",\"add\":\"cloudflare\",\"port\":\"443\",\"id\":\"$UUID\",\"net\":\"ws\",\"path\":\"$PATH\",\"host\":\"$DOMAIN\",\"tls\":\"tls\"}"|base64 -w0)"
-save Fixed "$VMESS"
-g "Fixed 已运行"
+  VMESS="vmess://$(echo -n "{\"v\":\"2\",\"ps\":\"SuohaFixed\",\"add\":\"cloudflare\",\"port\":\"443\",\"id\":\"$UUID\",\"net\":\"ws\",\"path\":\"$PATH\",\"host\":\"$DOMAIN\",\"tls\":\"tls\"}"|base64 -w0)"
+  save Fixed "$VMESS"
+  g "Fixed 已运行"
 }
 
 # ---------------- 菜单 ----------------
 clear
-g "===== 一键梭哈 v3.6.0 ====="
+g "===== 一键梭哈 v3.6.1 ====="
 echo "1) Quick（临时）"
 echo "2) Fixed（自启）"
 echo "3) 查看节点"
